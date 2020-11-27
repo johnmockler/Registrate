@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.WSA;
 
-//Singleton Class to store app state
+//Singleton Class to store app state and manage app-wide operations
 public class AppState: MonoBehaviour
 {
     public enum Status
@@ -26,14 +26,14 @@ public class AppState: MonoBehaviour
     public static AppState instance = null;
 
     private Status state;
-    InputHandler controls;
+    public InputHandler controls;
     private int targets_placed;
     private int markers_detected;
     private float multiplier;
     private bool registrationComputed;
     private Vector3 initialPlacement;
     public GameObject[] placedTargets;
-    Transform modelTransform;
+    Matrix4x4 tfModelToWorld;
 
 
     [SerializeField]
@@ -49,11 +49,13 @@ public class AppState: MonoBehaviour
             Destroy(gameObject) ;
         }
 
-        state = Status.EXPLORATION;
-        controls = new InputHandler();
-        targets_placed = 0;
-        markers_detected = 0;
-        multiplier = 1.0f;
+        print(instance == this);
+
+        this.state = Status.EXPLORATION;
+        this.controls = new InputHandler();
+        this.targets_placed = 0;
+        this.markers_detected = 0;
+        this.multiplier = 1.0f;
     }
 
     void Start()
@@ -121,10 +123,10 @@ public class AppState: MonoBehaviour
 
     public bool addNewTarget()
     {
-        placedTargets[targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
-        if (placedTargets[targets_placed] != null)
+        this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
+        if (this.placedTargets[this.targets_placed] != null)
         {
-            initialPlacement = placedTargets[targets_placed].transform.position;
+            initialPlacement = this.placedTargets[this.targets_placed].transform.position;
             return true;
         }
         else
@@ -133,17 +135,32 @@ public class AppState: MonoBehaviour
         }
     }
 
-    public bool resetTarget()
+    //resets the target hologram to the original position (maybe just make you place it again?)
+    public void resetTarget()
     {
-        if (placedTargets[targets_placed] != null)
+        if (this.placedTargets[this.targets_placed] != null)
         {
-            placedTargets[targets_placed].transform.position = initialPlacement;
-            return true;
+            this.placedTargets[this.targets_placed].transform.position = initialPlacement;
+
         }
-        else
+
+        return;
+    }
+
+    public void resetState()
+    {
+        if (this.targets_placed > 0)
         {
-            return false;
+            for (int i = 0; i < this.targets_placed; i++)
+            {
+                Destroy(this.placedTargets[i]);
+            }
+
+            this.targets_placed = 0;
+            this.state = Status.FIND_TARGET;
         }
+
+        return;
     }
 
     public void translateTarget(float x, float y, float z)
@@ -161,6 +178,7 @@ public class AppState: MonoBehaviour
         if(this.computeRegistration())
         {
             //this.correctPoints();
+            this.state = Status.EXPLORATION;
         }
         else
         {
@@ -178,18 +196,31 @@ public class AppState: MonoBehaviour
         placedTargets[targets_placed].GetComponent<WorldAnchor>();
     }
 
-    //Helper Functions Move these somewhere else??
 
     private bool computeRegistration()
     {
         bool result;
-        Matrix4x4 tfMatrix;
-
-        Alignment3D modelAlign = new Alignment3D.Alignment3D(placedTargets);
-        (modelTransform, result) = modelAlign.computeRegistration();
+        print("here");
+        Alignment3D modelAlign = new Alignment3D(placedTargets);
+        print("here1");
+        (tfModelToWorld, result) = modelAlign.computeRegistration();
+        print(result);
         
         return result;
 
+    }
+
+    //possibly its own class?
+    //save transform to txt file or something
+    private bool saveTransform()
+    {
+        return true;
+    }
+
+    //load transform and load to variable.
+    private bool recoverTransform()
+    {
+        return true;
     }
 
     /*

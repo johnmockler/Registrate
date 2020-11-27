@@ -23,7 +23,7 @@ public class Alignment3D
 
     GameObject[] placedTargets;
     Target[] targetList;
-    Transform modelTransform;
+    Matrix4x4 tfModelToWorld;
 
     //check to see if this copies the game objects...if so maybe i should change it....but i think an array is just a reference to the first value right?
     public Alignment3D(GameObject[] placedTargets)
@@ -41,7 +41,7 @@ public class Alignment3D
 
         for (int i = 0; i < Constants.NUM_TARGETS; i++)
         {
-            this.targetList[i] = new Target(placedTargets[i].transform.position, model_points[i]);
+            this.targetList[i] = new Target(this.placedTargets[i].transform.position, model_points[i]);
 
         }
     }
@@ -50,7 +50,7 @@ public class Alignment3D
     {
         //check if points are same length for robustness
 
-        Matrix4x4 tfMatrix = Matrix4x4.identity;
+        //Matrix4x4 tfMatrix = Matrix4x4.identity;
         Vector3[] model_points, detected_points;
         (model_points, detected_points) = reformatArray(this.targetList);
         bool successful = false;
@@ -93,8 +93,8 @@ public class Alignment3D
         float[] T = new float[16];
         EigenWrapper.calculateTransform(p1, p2, X, T);
         float[,] T2D = Array1DToArray2D(T, 4, 4);
-        tfMatrix = convertToMatrix4x4(T2D).transpose;
-        this.modelTransform = matrix4X4toTransform(tfMatrix);
+        this.tfModelToWorld = convertToMatrix4x4(T2D).transpose;
+        //this.tfModelToWorld = matrix4X4toTransform(tfMatrix);
         //if (det > 0)
         //{
 
@@ -154,7 +154,7 @@ public class Alignment3D
         //Check whether this is right or left handed coordinate system.
 
     */
-        return (modelTransform, successful);
+        return (tfModelToWorld, successful);
     }
 
     private static float[] findCentroid(Vector3[] point_set)
@@ -275,10 +275,12 @@ public class Alignment3D
 
         return Array1D;
     }
-    private static Transform matrix4X4toTransform(Matrix4x4 m)
+
+    //updates the transform of a game object
+    private static void matrix4X4toTransform(Matrix4x4 m, ref GameObject gameObject)
     {
 
-        Transform tf = new Transform();
+        //Transform tf; //= new Transform();
         Quaternion rotation;
 
         Vector3 fwd;
@@ -299,9 +301,9 @@ public class Alignment3D
         position.y = m.m13;
         position.z = m.m23;
 
-        tf.SetPositionAndRotation(position, rotation);
+        gameObject.transform.SetPositionAndRotation(position, rotation);
 
-        return tf;
+        return;
 
     }
 }

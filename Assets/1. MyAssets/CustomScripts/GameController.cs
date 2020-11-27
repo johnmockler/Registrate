@@ -33,16 +33,21 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
 
     void Awake()
     {
-        appStatus = AppState.instance;
+        controls = new InputHandler();
+
     }
     void Start()
     {
         //_instructionText.text = "Walk around the scene to initialize device tracking";
-        cursor = GameObject.Find("/Cursor");
+
+        appStatus = AppState.instance;
+        controls.Player.SetCallbacks(this);
+
         hudDisplay = GameObject.Find("/UserInterface/HUD");
-        menuController = GameObject.Find("/_MenuController").GetComponent(typeof(MenuController)) as MenuController; ;
+        menuController = GameObject.Find("/_MenuController").GetComponent<MenuController>();
 
         cursor.SetActive(false);
+        this.enableControl();
         /*
         targetList = new ModelRegistration.Target[] { new ModelRegistration.Target(new Vector3(0, 0, 0), new Vector3 (0.0867381f, -1.647f, 1.838f), GameObject.Find("/kabinDemonstrator/FirstTarget")),
                        new ModelRegistration.Target(new Vector3(0, 0, 0), new Vector3(0.407f, -1.781f, 1.13927f), GameObject.Find("/kabinDemonstrator/SecondTarget")),
@@ -57,8 +62,12 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
 
     void OnEnable()
     {
-        appStatus.getControl(ref controls);
-        controls.Player.SetCallbacks(this);
+        cursor = GameObject.Find("/Cursor");
+
+    }
+
+    public void enableControl()
+    {
         controls.Player.Enable();
 
         if (hudDisplay != null)
@@ -67,14 +76,17 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         }
     }
 
-    void OnDisable()
+    public void disableControl()
     {
+        controls.Player.Disable();
         if (hudDisplay != null)
         {
             hudDisplay.SetActive(false);
 
         }
     }
+
+ 
 
     public void OnEnter(InputAction.CallbackContext context)
     {
@@ -83,7 +95,7 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             //reset scaling for each adjustment.
             translationStep = Constants.BASE_TRANSLATION;
             rotationStep = Constants.BASE_ROTATION;
-
+            print(appStatus.getTargetCount());
             switch (appStatus.getState())
             {
                 case AppState.Status.EXPLORATION:
@@ -101,19 +113,23 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
                 case AppState.Status.ADJUST_NORMAL:
                 case AppState.Status.ADJUST_DEPTH:
                 //add world anchor to object once it is finished being placed
-                    appStatus.incrementTarget();
-                    //Check whether we have found all of the targets.
-                    if (appStatus.getTargetCount() >= Constants.NUM_TARGETS - 1)
+                //Check whether we have found all of the targets.
+
+
+                if (appStatus.getTargetCount() >= Constants.NUM_TARGETS-1)
                     {
                         appStatus.setState(AppState.Status.ALIGNMENT_READY);
 
                     }
                     else
                     {
+                        appStatus.incrementTarget();
+
                         cursor.SetActive(true);
                         appStatus.setState(AppState.Status.FIND_TARGET);
                     }
-                    break;
+
+                break;
                 //put in appstate maybe?
                 case AppState.Status.ALIGNMENT_READY:
                     appStatus.computeAlignment();
@@ -238,8 +254,9 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         if (context.started == true)
         {
             //switch control from menu to game
-            menuController.enabled = true;
-            this.enabled = false;
+            this.disableControl();
+            menuController.enableControl();
+
         }
     }
 
