@@ -147,11 +147,12 @@ public class AppState: MonoBehaviour
         return;
     }
 
-    public void resetState()
+    public void resetAll()
     {
-        if (this.targets_placed > 0)
+        int n = this.placedTargets.Length;
+        if (n > 0)
         {
-            for (int i = 0; i < this.targets_placed; i++)
+            for (int i = 0; i < n; i++)
             {
                 Destroy(this.placedTargets[i]);
             }

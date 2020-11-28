@@ -99,8 +99,13 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
                 print("i'm here");
                 //instantiate map on spatial mesh
                 popOutModel = SpatialAwarenessInterface.PlaceObject(modelImage);
-                menuDisplay.SetActive(true);
-                placingMap = false;
+                if(popOutModel != null)
+                {
+                    menuDisplay.SetActive(true);
+                    cursor.SetActive(false);
+                    placingMap = false;
+                }
+
             }
 
         }
@@ -199,7 +204,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
 
     void resetCalibration()
     {
-        appStatus.resetState();
+        appStatus.resetAll();
         switchControl();
 
     }

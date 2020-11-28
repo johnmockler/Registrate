@@ -74,6 +74,11 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         {
             hudDisplay.SetActive(true);
         }
+
+        if (appStatus.getState() == AppState.Status.FIND_TARGET)
+        {
+            cursor.SetActive(true);
+        }
     }
 
     public void disableControl()
@@ -84,6 +89,8 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             hudDisplay.SetActive(false);
 
         }
+
+        cursor.SetActive(false); 
     }
 
  
@@ -95,7 +102,7 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             //reset scaling for each adjustment.
             translationStep = Constants.BASE_TRANSLATION;
             rotationStep = Constants.BASE_ROTATION;
-            print(appStatus.getTargetCount());
+            print("I AM PRESSED");
             switch (appStatus.getState())
             {
                 case AppState.Status.EXPLORATION:

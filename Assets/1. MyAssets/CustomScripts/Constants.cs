@@ -12,6 +12,8 @@ public static class Constants
     public const float BASE_TRANSLATION = 0.01f;
     public const float BASE_ROTATION = 0.25f;
 
+    //array wont let me be constant :(
+    public static string[] BRACKET_TARGETS = {"bracket3", "bracket4", "bracket8", "bracket9", "bracket14", "bracket15" };
 
     //public const List<Vector4> MODEL_POINTS;
 
