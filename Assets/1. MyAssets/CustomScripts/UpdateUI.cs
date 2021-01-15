@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,6 +16,10 @@ public class UpdateUI : MonoBehaviour
     int previousTargets;
     int previousMarkers;
     float previousMultiplier;
+    int sensitivityLevel;
+
+    [SerializeField]
+    public GameObject visualizationAxis;
 
 
 
@@ -31,7 +36,6 @@ public class UpdateUI : MonoBehaviour
         previousTargets = appStatus.getTargetCount();
         previousMarkers = appStatus.getMarkerCount();
 
-
         status_msg = GameObject.Find("StatusMsg").GetComponent<TextMesh>();
         mode = GameObject.Find("StatusDisplay/CurrentMode").GetComponent<TextMesh>();
         marker_count = GameObject.Find("StatusDisplay/MarkerCount").GetComponent<TextMesh>();
@@ -45,7 +49,7 @@ public class UpdateUI : MonoBehaviour
         status_msg.text = "Walk around the scene to initialize device tracking";
         marker_count.text = previousMarkers.ToString();
         target_count.text = previousTargets.ToString();
-        multiplier.text = "1x";
+        multiplier.text = sensitivityLevel.ToString();
 
 
     }
@@ -90,6 +94,14 @@ public class UpdateUI : MonoBehaviour
                     statusMessage = "Press A to confirm alignment";
                     mode_msg = "Alignment Ready";
                     break;
+                case AppState.Status.ALIGNED:
+                    statusMessage = "Cabin successfully aligned";
+                    mode_msg = "Aligned";
+                    break;
+                case AppState.Status.FAILED:
+                    statusMessage = "Could not find cabin in scene. Reset to try again.";
+                    mode_msg = "Failed";
+                    break;
                 default:
                     statusMessage = "";
                     mode_msg = "";
@@ -112,8 +124,9 @@ public class UpdateUI : MonoBehaviour
 
         if (currentMultiplier != previousMultiplier)
         {
-            multiplier.text = currentMultiplier.ToString() + "x";
+            multiplier.text = mapSensitivity(currentMultiplier).ToString();
         }
+
 
         previousStatus = currentStatus;
         previousMarkers = currentMarkers;
@@ -122,8 +135,8 @@ public class UpdateUI : MonoBehaviour
 
     }
 
-    public void setMultiplier(float level)
+    int mapSensitivity(float level)
     {
-
+        return Convert.ToInt32(Math.Round(Math.Log(level, Constants.MULTIPLIER))) + 5;
     }
 }

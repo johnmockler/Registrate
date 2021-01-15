@@ -25,7 +25,7 @@ public class UpdateMap : MonoBehaviour
     {
         appStatus = AppState.instance;
         previousTargetCount = appStatus.getTargetCount();
-        updateColors(previousTargetCount);
+        updateTargets(previousTargetCount);
 
 
     }
@@ -36,26 +36,35 @@ public class UpdateMap : MonoBehaviour
 
         if (currentTargetCount != previousTargetCount)
         {
-            updateColors(currentTargetCount);
+            updateTargets(currentTargetCount);
         }
 
         previousTargetCount = currentTargetCount;
 
     }
 
-    void updateColors(int targetCount)
+    void updateTargets(int targetCount)
     {
         for (int i=0; i < Constants.NUM_TARGETS; i++)
         {
+            Blink blinkScript = target_objs[i].GetComponent<Blink>();
+            if (blinkScript != null)
+            {
+                Destroy(blinkScript);
+            }
+
             //completed targets are blue
             if (i < targetCount)
             {
                 target_objs[i].GetComponent<Image>().color = Color.blue;
+
             }
             //active targets are green
             else if (i == targetCount)
             {
+                //will this fuck with the memory tho?
                 target_objs[i].GetComponent<Image>().color = Color.green;
+                target_objs[i].AddComponent(typeof(Blink));// as Blink;
             }
             //not yet active targets are red
             else

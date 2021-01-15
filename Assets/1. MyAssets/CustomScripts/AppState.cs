@@ -19,9 +19,11 @@ public class AppState: MonoBehaviour
         ADJUST_Z,
         REGISTRATION,
         ALIGNMENT_READY,
-        ALIGNED
+        ALIGNED,
+        FAILED
 
     }
+
 
     public static AppState instance = null;
 
@@ -32,12 +34,18 @@ public class AppState: MonoBehaviour
     private float multiplier;
     private bool registrationComputed;
     private Vector3 initialPlacement;
-    public GameObject[] placedTargets;
+    private GameObject[] placedTargets;
+    private GameObject[] markers;
     Matrix4x4 tfModelToWorld;
+
 
 
     [SerializeField]
     public GameObject _objectToPlace;
+
+    [SerializeField]
+    bool lockToMarker;
+
 
     private void Awake()
     {
@@ -61,6 +69,10 @@ public class AppState: MonoBehaviour
     void Start()
     {
         placedTargets = new GameObject[4];
+
+        markers = new GameObject[] { GameObject.Find("/Marker1"), GameObject.Find("/Marker2"),
+            GameObject.Find("/Marker3"), GameObject.Find("/Marker4") };
+
         registrationComputed = false;
     }
 
@@ -121,6 +133,21 @@ public class AppState: MonoBehaviour
         this.markers_detected--;
     }
 
+    public void confirmPlacement()
+    {
+        if (lockToMarker)
+        {
+            //update 2 with however many targets we want per marker...
+            this.placedTargets[this.targets_placed].transform.parent = markers[targets_placed / 2].transform;
+            incrementTarget();
+        }
+        else
+        {
+            addAnchor();
+            incrementTarget();
+        }
+    }
+
     public bool addNewTarget()
     {
         this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
@@ -157,6 +184,7 @@ public class AppState: MonoBehaviour
                 Destroy(this.placedTargets[i]);
             }
 
+            this.placedTargets = new GameObject[4];
             this.targets_placed = 0;
             this.state = Status.FIND_TARGET;
         }
@@ -179,11 +207,12 @@ public class AppState: MonoBehaviour
         if(this.computeRegistration())
         {
             //this.correctPoints();
-            this.state = Status.EXPLORATION;
+            this.state = Status.ALIGNED;
         }
         else
         {
             //change status to failed.
+            this.state = Status.FAILED;
         }
     }
 
@@ -202,7 +231,13 @@ public class AppState: MonoBehaviour
     {
         bool result;
         print("here");
-        Alignment3D modelAlign = new Alignment3D(placedTargets);
+        Vector3[] targetCoords = new Vector3[placedTargets.Length];
+        for (int i = 0; i < placedTargets.Length; i++)
+        {
+            targetCoords[i] = placedTargets[i].transform.position;
+        }
+
+        Alignment3D modelAlign = new Alignment3D(targetCoords);
         print("here1");
         (tfModelToWorld, result) = modelAlign.computeRegistration();
         print(result);

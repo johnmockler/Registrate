@@ -9,8 +9,9 @@ public static class Constants
     public const int NUM_TARGETS = 4;
     public const int NUM_MARKERS = 4;
 
-    public const float BASE_TRANSLATION = 0.01f;
-    public const float BASE_ROTATION = 0.25f;
+    public const float BASE_TRANSLATION = 0.005f;
+    public const float BASE_ROTATION = 0.5f;
+    public const float MULTIPLIER = 1.5f;
 
     //array wont let me be constant :(
     public static string[] BRACKET_TARGETS = {"bracket3", "bracket4", "bracket8", "bracket9", "bracket14", "bracket15" };

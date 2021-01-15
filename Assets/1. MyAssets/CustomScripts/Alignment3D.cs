@@ -21,27 +21,35 @@ public class Alignment3D
 
     private Vector3[] model_points;
 
-    GameObject[] placedTargets;
+    //GameObject[] placedTargets;
+    Vector3[] placedTargets;
     Target[] targetList;
     Matrix4x4 tfModelToWorld;
 
     //check to see if this copies the game objects...if so maybe i should change it....but i think an array is just a reference to the first value right?
-    public Alignment3D(GameObject[] placedTargets)
+    public Alignment3D(Vector3[] placedTargets)
     {
         this.placedTargets = placedTargets;
         this.targetList = new Target[Constants.NUM_TARGETS];
-        model_points = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0.215f, 0, 0), new Vector3(0.215f, 0.279f, 0), new Vector3(0, 0.279f, 0) };
+        //this.targetList = new Target[Constants.NUM_TARGETS];
+        //model_points = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0.215f, 0, 0), new Vector3(0.215f, 0.279f, 0), new Vector3(0, 0.279f, 0) };
+        model_points = new Vector3[] { new Vector3(1, 1, 0), new Vector3(-1, 1, 0), new Vector3(-1, -1, 0) , new Vector3(1, -1, 0) };
+
         //maybe get this matrix from constants?
-        /*
+
+        /*+90 degree rotation for left handed system
         this.targetList = new Target[] { new Target(new Vector3(0, 0, 0), new Vector3 (0, 0, 0)),
-                       new Target(new Vector3(0, -1, 0), new Vector3(0.215f, 0, 0)),
-                       new Target(new Vector3(1, -1, 0), new Vector3(0.215f, 0.279f, 0)),
-                       new Target(new Vector3(1, 0, 0), new Vector3(0, 0.279f, 0))};
+                       new Target(new Vector3(0, -1, 0), new Vector3(1, 0, 0)),
+                       new Target(new Vector3(1, -1, 0), new Vector3(1, 1, 0)),
+                       new Target(new Vector3(1, 0, 0), new Vector3(0, 1, 0))};
+        
         */
 
         for (int i = 0; i < Constants.NUM_TARGETS; i++)
         {
-            this.targetList[i] = new Target(this.placedTargets[i].transform.position, model_points[i]);
+            this.targetList[i] = new Target(placedTargets[i], model_points[i]);
+
+            //this.targetList[i] = new Target(this.placedTargets[i].transform.position, model_points[i]);
 
         }
     }
@@ -51,167 +59,77 @@ public class Alignment3D
         //check if points are same length for robustness
 
         //Matrix4x4 tfMatrix = Matrix4x4.identity;
-        Vector3[] model_points, detected_points;
-        (model_points, detected_points) = reformatArray(this.targetList);
         bool successful = false;
 
-        //uses method “Least-squares fitting of two 3 - D point sets" by arun
-        float[] p1 = findCentroid(model_points);
-        float[] p2 = findCentroid(detected_points);
+        float[,] x_array, y_array;
+        (x_array, y_array) = reformatTargetList(this.targetList);
 
-        Vector3[] q1 = shiftCentroid(model_points, p1);
-        Vector3[] q2 = shiftCentroid(detected_points, p2);
+        float[] X = Array2DToArray1D(x_array);
+        float[] Y = Array2DToArray1D(y_array);
+        int N = targetList.Length;
+        float[] R = new float[9];
+        float[] t = new float[3];
 
-        float[,] H2D = calculateH(q1, q2);
-        float[] H = Array2DToArray1D(H2D);
-        float[] X = new float[9];
-        EigenWrapper.calculateLeastSquares(H,X);
-        //float[,] X2D = Array1DToArray2D(X, 3, 3);
-        /*
-        float[] X = new float[9];
-        float[,] X2F = new float[3, 3];
-        //float det;
-        IntPtr result;
+        float[,] W = new float[3,3];
 
-        unsafe
+        for(int i = 0; i < 3; i++)
         {
-            fixed (float* hPtr = H)
+            for(int j = 0; j < 3; j++)
             {
-                IntPtr  hIntPtr = new IntPtr(hPtr);
-                result = EigenWrapper.calculateLeastSquares(hIntPtr);
-            }
-        }
-        Marshal.Copy(result, X, 0, 9);
-        System.Buffer.BlockCopy(X, 0, X2F, 0, sizeof(float) * 3 * 3);
-        Marshal.DestroyStructure<IntPtr>(result);
-        */
-
-
-        //UnityEngine.Debug.Log(X.ToString());
-        //Calculate Det Here to check if success.
-
-        float[] T = new float[16];
-        EigenWrapper.calculateTransform(p1, p2, X, T);
-        float[,] T2D = Array1DToArray2D(T, 4, 4);
-        this.tfModelToWorld = convertToMatrix4x4(T2D).transpose;
-        //this.tfModelToWorld = matrix4X4toTransform(tfMatrix);
-        //if (det > 0)
-        //{
-
-        /*
-        IntPtr result1;
-            float[] Tf = new float[16];
-            float[,] Tf2F = new float[4, 4];
-            unsafe
-            {
-                fixed(float* p1Ptr = p1, p2Ptr = p2, xPtr = X2F)
+                if (i==j)
                 {
-                    IntPtr p1IntPtr = new IntPtr(p1Ptr);
-                    IntPtr p2IntPtr = new IntPtr(p2Ptr);
-                    IntPtr xIntPtr = new IntPtr(xPtr);
-
-
-                    result1 = EigenWrapper.calculateTransform(p1IntPtr, p2IntPtr, xIntPtr);
+                    W[i, j] = 1.0f;
+                }
+                else
+                {
+                    W[i, j] = 0.0f;
                 }
             }
-            Marshal.Copy(result1, Tf, 0, 16);
-            System.Buffer.BlockCopy(Tf, 0, Tf2F, 0, sizeof(float) * 4 * 4);
-            Marshal.DestroyStructure<IntPtr>(result1);
-            modelTransform = convertToMatrix4x4(Tf2F).transpose;
-
-            UnityEngine.Debug.Log(modelTransform.ToString()) ;
-            successful = true;
-
-        //}
-        //else
-        //{
-        //    modelTransform = Matrix4x4.identity;
-        //    successful = false;
-        //}
-
-       
-
-
-
-
-        //modelTransform = Matrix4x4.identity;
-        //Debug.Log(det);
-        /*
-        //fails if det = -1, success if det = 1;
-        if (det > 0)
-        {
-            float[,] Tf = new float[4, 4];
-            EigenWrapper.calculateTransform(p1, p2, X, Tf);
-            modelTransform = convertToMatrix4x4(Tf);
-            successful = true;
-        }
-        else
-        {
-            modelTransform = Matrix4x4.identity;
-            successful = false;
         }
 
-        //Check whether this is right or left handed coordinate system.
+        float[] w_resized = Array2DToArray1D(W);
+        
+        float error1 = EigenWrapper.registerIsotropic(X, Y, N, R, t);
 
-    */
-        return (tfModelToWorld, successful);
+        float error = EigenWrapper.registerAnisotropic(X, Y, w_resized, N, 0.05f, R, t);
+
+        float[,] rotMatrix = Array1DToArray2D(R, 3, 3);
+
+        Matrix4x4 Transform = buildTfMatrix(rotMatrix, t);
+        //this.tfModelToWorld = convertToMatrix4x4(T2D).transpose;
+        Debug.Log("Non Iterative error is");
+        Debug.Log(error1);
+        Debug.Log("Iterative error is");
+        Debug.Log(error);
+
+
+        return (Transform, successful);
     }
 
-    private static float[] findCentroid(Vector3[] point_set)
+    private static Matrix4x4 buildTfMatrix(float[,] R, float[] t)
     {
-        Vector3 centroid = new Vector3(0.0f, 0.0f, 0.0f);
-        int num_points = point_set.Length;
-
-        for (int i = 0; i < num_points; i++)
-        {
-            centroid.x += point_set[i].x;
-            centroid.y += point_set[i].y;
-            centroid.z += point_set[i].z;
-        }
-        centroid = centroid / num_points;
-
-        float[] centroidF = new float[3];
-        centroidF[0] = centroid.x;
-        centroidF[1] = centroid.y;
-        centroidF[2] = centroid.z;
-
-        return centroidF;
-    }
-
-    private static Vector3[] shiftCentroid(Vector3[] point_set, float[] centroid)
-    {
-        int num_points = point_set.Length;
-
-        Vector3[] shifted_set = new Vector3[num_points];
-
-        for (int i = 0; i < num_points; i++)
-        {
-            shifted_set[i] = new Vector3(0.0f, 0.0f, 0.0f);
-            shifted_set[i].x = point_set[i].x - centroid[0];
-            shifted_set[i].y = point_set[i].y - centroid[1];
-            shifted_set[i].z = point_set[i].z - centroid[2];
-        }
-
-        return shifted_set;
-    }
-
-    private static float[,] calculateH(Vector3[] q1, Vector3[] q2)
-    {
-        float[,] H = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-
-        for (int i = 0; i < q1.Length; i++)
+        float[,] Tf = new float[4, 4];
+        for (int i = 0; i < 3; i++)
         {
             for (int j = 0; j < 3; j++)
             {
-                for (int k = 0; k < 3; k++)
-                {
-                    //calculate weighted average on the fly
-                    H[j, k] = H[j, k] + (q1[i][j] * q2[i][k] - H[j, k]) / (i + 1);
-                }
+                Tf[i, j] = R[i, j];
+                //Debug.Log(R[i, j]);
             }
         }
+        for (int i = 0; i < 3; i++)
+        {
+            Tf[i, 3] = t[i];
+            //Debug.Log(t[i]);
 
-        return H;
+        }
+        Tf[3, 0] = 0.0f;
+        Tf[3, 1] = 0.0f;
+        Tf[3, 2] = 0.0f;
+        Tf[3, 3] = 1.0f;
+
+        return convertToMatrix4x4(Tf);
+
     }
 
     private static Matrix4x4 convertToMatrix4x4(float[,] A)
@@ -221,7 +139,7 @@ public class Alignment3D
         {
             for (int j = 0; j < 4; j++)
             {
-                B[i, j] = A[i, j];
+                B[i, j] = A[i,j];
             }
         }
 
@@ -229,15 +147,20 @@ public class Alignment3D
 
     }
 
-    private static (Vector3[], Vector3[]) reformatArray(Target[] targetList)
+    private static (float[,], float[,]) reformatTargetList(Target[] targetList)
     {
-        Vector3[] modelPoints = new Vector3[targetList.Length];
-        Vector3[] detectedPoints = new Vector3[targetList.Length];
+        float[,] modelPoints = new float[3,targetList.Length];
+        float[,] detectedPoints = new float[3,targetList.Length];
 
         for (int i = 0; i < targetList.Length; i++)
         {
-            modelPoints[i] = targetList[i].actualCoord;
-            detectedPoints[i] = targetList[i].detectedCoord;
+            modelPoints[0,i] = targetList[i].actualCoord.x;
+            modelPoints[1,i] = targetList[i].actualCoord.y;
+            modelPoints[2,i] = targetList[i].actualCoord.z;
+
+            detectedPoints[0,i] = targetList[i].detectedCoord.x;
+            detectedPoints[1,i] = targetList[i].detectedCoord.y;
+            detectedPoints[2,i] = targetList[i].detectedCoord.z;
         }
 
         return (modelPoints, detectedPoints);
@@ -247,11 +170,11 @@ public class Alignment3D
     public static float[,] Array1DToArray2D(float[] Array1D, int rowDim, int columnDim)
     {
         float[,] Array2D = new float[rowDim, columnDim];
-        for (int i = 0; i < rowDim; i++)
+        for (int column = 0; column < columnDim; column++)
         {
-            for (int j = 0; j < columnDim; j++)
+            for (int row = 0; row < rowDim; row++)
             {
-                Array2D[i, j] = Array1D[i * rowDim + j];
+                Array2D[row, column] = Array1D[column * columnDim + row];
             }
         }
         return Array2D;
@@ -264,9 +187,9 @@ public class Alignment3D
         int noOfEntries = noOfRows * noOfColumns;
         float[] Array1D = new float[noOfEntries];
         int i = 0;
-        for (int row = 0; row < noOfRows; row++)
+        for (int column = 0; column < noOfColumns; column++) 
         {
-            for (int column = 0; column < noOfColumns; column++)
+            for (int row = 0; row < noOfRows; row++)
             {
                 Array1D[i] = Array2D[row, column];
                 i++;

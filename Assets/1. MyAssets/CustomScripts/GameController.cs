@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 //using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -22,6 +23,7 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
 
     InputHandler controls;
 
+    private Sounds sounds;
 
     //Matrix4x4 modelTransform;
 
@@ -29,11 +31,10 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     float translationStep = Constants.BASE_TRANSLATION;
     float rotationStep = Constants.BASE_ROTATION;
 
-    float MULTIPLIER = 1.5f;
-
     void Awake()
     {
         controls = new InputHandler();
+        this.sounds = GetComponent<Sounds>();
 
     }
     void Start()
@@ -45,6 +46,8 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
 
         hudDisplay = GameObject.Find("/UserInterface/HUD");
         menuController = GameObject.Find("/_MenuController").GetComponent<MenuController>();
+
+        this.sounds = GetComponent<Sounds>();
 
         cursor.SetActive(false);
         this.enableControl();
@@ -106,37 +109,44 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             switch (appStatus.getState())
             {
                 case AppState.Status.EXPLORATION:
+                    sounds.playClip("enter");
                     cursor.SetActive(true);
                     appStatus.setState(AppState.Status.FIND_TARGET);
                     break;
                 case AppState.Status.FIND_TARGET:
+
                     if (appStatus.addNewTarget())
                     {
+                        sounds.playClip("enter");
                         cursor.SetActive(false);
                         appStatus.setState(AppState.Status.ADJUST_ROTATION);
                     }
-                    break;
+                    else
+                    {
+                        sounds.playClip("enter failed");
+
+                    }
+                break;
                 case AppState.Status.ADJUST_ROTATION:
                 case AppState.Status.ADJUST_NORMAL:
                 case AppState.Status.ADJUST_DEPTH:
                 //add world anchor to object once it is finished being placed
                 //Check whether we have found all of the targets.
 
+                    appStatus.confirmPlacement();
 
-                if (appStatus.getTargetCount() >= Constants.NUM_TARGETS-1)
-                    {
-                        appStatus.setState(AppState.Status.ALIGNMENT_READY);
+                    if (appStatus.getTargetCount() >= Constants.NUM_TARGETS)
+                        {
+                            appStatus.setState(AppState.Status.ALIGNMENT_READY);
+                        }
+                        else
+                        {
+                            sounds.playClip("target placed");
+                            cursor.SetActive(true);
+                            appStatus.setState(AppState.Status.FIND_TARGET);
+                        }
 
-                    }
-                    else
-                    {
-                        appStatus.incrementTarget();
-
-                        cursor.SetActive(true);
-                        appStatus.setState(AppState.Status.FIND_TARGET);
-                    }
-
-                break;
+                    break;
                 //put in appstate maybe?
                 case AppState.Status.ALIGNMENT_READY:
                     appStatus.computeAlignment();
@@ -151,8 +161,18 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     {
         if (context.started == true)
         {
+            switch (appStatus.getState())
+            {
+                case AppState.Status.ADJUST_ROTATION:
+                case AppState.Status.ADJUST_NORMAL:
+                case AppState.Status.ADJUST_DEPTH:
+                    sounds.playClip("back");
+
+                    appStatus.resetTarget();
+                    break;
+            }
             // 'Use' code here.
-            appStatus.resetTarget();
+
         }
 
     }
@@ -161,11 +181,18 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         // 'Use' code here.
         if (context.started == true)
         {
-            if (translationStep < Constants.BASE_TRANSLATION * 10)
+            if (translationStep < Constants.BASE_TRANSLATION * Math.Pow(Constants.MULTIPLIER, 4))
             {
-                translationStep *= MULTIPLIER;
-                rotationStep *= MULTIPLIER;
+                sounds.playClip("toggle settings");
+
+                translationStep *= Constants.MULTIPLIER;
+                rotationStep *= Constants.MULTIPLIER;
                 appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
+            }
+            else
+            {
+                sounds.playClip("toggle settings failed");
+
             }
 
         }
@@ -175,34 +202,47 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             // 'Use' code here.
             if (context.started == true)
             {
-                if (translationStep > Constants.BASE_TRANSLATION / 10)
+                if (translationStep > Constants.BASE_TRANSLATION / Math.Pow(Constants.MULTIPLIER, 4))
                 {
-                    translationStep /= MULTIPLIER;
-                    rotationStep /= MULTIPLIER;
+                    sounds.playClip("toggle settings");
+
+                    translationStep /= Constants.MULTIPLIER;
+                    rotationStep /= Constants.MULTIPLIER;
                     appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
-            }
+                }
+                else
+                {
+                    sounds.playClip("toggle settings failed");
+
+                }
 
 
 
-            }
+        }
         }
     public void OnDpadRight(InputAction.CallbackContext context)
         {
             if (context.started == true)
             {
+                sounds.playClip("toggle settings");
+
+                //reset sensitivity:
+                translationStep = Constants.BASE_TRANSLATION;
+                rotationStep = Constants.BASE_ROTATION;
+                appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
 
                 switch (appStatus.getState())
-                {
-                    case AppState.Status.ADJUST_ROTATION:
-                    appStatus.setState(AppState.Status.ADJUST_NORMAL);
-                    break;
-                    case AppState.Status.ADJUST_NORMAL:
-                    appStatus.setState(AppState.Status.ADJUST_DEPTH);
-                    break;
-                    case AppState.Status.ADJUST_DEPTH:
-                    appStatus.setState(AppState.Status.ADJUST_ROTATION);
-                    break;
-                }
+                    {
+                        case AppState.Status.ADJUST_ROTATION:
+                        appStatus.setState(AppState.Status.ADJUST_NORMAL);
+                        break;
+                        case AppState.Status.ADJUST_NORMAL:
+                        appStatus.setState(AppState.Status.ADJUST_DEPTH);
+                        break;
+                        case AppState.Status.ADJUST_DEPTH:
+                        appStatus.setState(AppState.Status.ADJUST_ROTATION);
+                        break;
+                    }
             }
            
         }
@@ -210,18 +250,24 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         {
             if (context.started == true)
             {
+                sounds.playClip("toggle settings");
+
+                translationStep = Constants.BASE_TRANSLATION;
+                rotationStep = Constants.BASE_ROTATION;
+                appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
+
                 switch (appStatus.getState())
-                {
-                    case AppState.Status.ADJUST_ROTATION:
-                    appStatus.setState(AppState.Status.ADJUST_DEPTH);
-                    break;
-                    case AppState.Status.ADJUST_NORMAL:
-                    appStatus.setState(AppState.Status.ADJUST_ROTATION);
-                    break;
-                    case AppState.Status.ADJUST_DEPTH:
-                    appStatus.setState(AppState.Status.ADJUST_NORMAL);
-                    break;
-                }
+                    {
+                        case AppState.Status.ADJUST_ROTATION:
+                        appStatus.setState(AppState.Status.ADJUST_DEPTH);
+                        break;
+                        case AppState.Status.ADJUST_NORMAL:
+                        appStatus.setState(AppState.Status.ADJUST_ROTATION);
+                        break;
+                        case AppState.Status.ADJUST_DEPTH:
+                        appStatus.setState(AppState.Status.ADJUST_NORMAL);
+                        break;
+                    }
             }
         }
     //Use to control positioning of the hologram
@@ -235,7 +281,7 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             if (appStatus.getState() == AppState.Status.ADJUST_ROTATION)
             {
                 float rotateY = x_dir * rotationStep;
-                appStatus.rotateTarget(0, rotateY, 0);
+                appStatus.rotateTarget(0, -rotateY, 0);
             }
             //take both
             else if (appStatus.getState() == AppState.Status.ADJUST_NORMAL)
@@ -260,6 +306,8 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         {
         if (context.started == true)
         {
+            sounds.playClip("open menu");
+
             //switch control from menu to game
             this.disableControl();
             menuController.enableControl();
