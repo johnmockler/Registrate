@@ -46,7 +46,7 @@ public class UpdateUI : MonoBehaviour
         GameObject.Find("StatusDisplay/TargetLimit").GetComponent<TextMesh>().text = Constants.NUM_TARGETS.ToString();
 
 
-        status_msg.text = "Walk around the scene to initialize device tracking";
+        status_msg.text = "Welcome to Registrate. Press the 'A' button on the controller to proceed through the dialog";
         marker_count.text = previousMarkers.ToString();
         target_count.text = previousTargets.ToString();
         multiplier.text = sensitivityLevel.ToString();
@@ -70,18 +70,38 @@ public class UpdateUI : MonoBehaviour
 
             switch (currentStatus)
             {
+                case AppState.Status.INTRO_1:
+                    statusMessage = "Welcome to Registrate. Press the 'A' button on the controller to proceed through the dialogue";
+                    mode_msg = "Introduction";
+                    break;
+                case AppState.Status.INTRO_2:
+                    statusMessage = "To access the settings and map, press the menu button";
+                    mode_msg = "Introduction";
+                    break;
+                case AppState.Status.INTRO_3:
+                    statusMessage = "From there you can also place the map on a surface, or reset the calibration";
+                    mode_msg = "Introduction";
+                    break;
                 case AppState.Status.EXPLORATION:
-                    statusMessage = "Walk around the scene to initialize device tracking";
+                    statusMessage = "Now, walk around the scene to initialize device tracking. When finished, press A.";
                     mode_msg = "Exploration";
                     break;
-                case AppState.Status.FIND_TARGET:
-                    statusMessage = "Place the target at the designated position.";
-                    mode_msg = "Searching";
+                case AppState.Status.FIND_MARKER:
+                    statusMessage = "Find the indicated marker. Press A when satisfied with the alignment.";
+                    mode_msg = "Find Marker";
                     break;
-                case AppState.Status.ADJUST_ROTATION:
-                    statusMessage = "Rotate the target so that it is facing you.";
+                case AppState.Status.FIND_TARGET:
+                    statusMessage = "Place the target at the designated position by pressing A. ";
+                    mode_msg = "Find Target";
+                    break;
+                case AppState.Status.ADJUST_ROTATIONY:
+                    statusMessage = "Rotate the target horizontally using the left stick,  so that it is facing you.";
                     mode_msg = "Adjust Rotation";
                     break;
+                case AppState.Status.ADJUST_ROTATIONX:
+                    statusMessage = "Rotate the target vertically using the left stick.";
+                    mode_msg = "Adjust Face";
+                break;
                 case AppState.Status.ADJUST_NORMAL:
                     statusMessage = "Adjust the position of the target.";
                     mode_msg = "Adjust Face";
@@ -91,7 +111,7 @@ public class UpdateUI : MonoBehaviour
                     mode_msg = "Adjust Depth";
                     break;
                 case AppState.Status.ALIGNMENT_READY:
-                    statusMessage = "Press A to confirm alignment";
+                    statusMessage = "When you are ready, press A to confirm alignment";
                     mode_msg = "Alignment Ready";
                     break;
                 case AppState.Status.ALIGNED:

@@ -20,7 +20,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
     private GameObject modelImage;
     private GameObject popOutModel;
     private GameObject cursor;
-
+    private TextMesh status_msg;
     private GameController gameController;
 
     private bool placingMap;
@@ -47,7 +47,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
 
 
 
-
+        status_msg = GameObject.Find("StatusMsg").GetComponent<TextMesh>();
         placeMap = GameObject.Find("/UserInterface/MenuScreen/Options/PlaceMap/place_indicator");
         resetCalib = GameObject.Find("/UserInterface/MenuScreen/Options/ResetCalibration/reset_indicator");
         gameController = GameObject.Find("/_GameController").GetComponent<GameController>(); ;
@@ -104,9 +104,10 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
             }
             else
             {
-                print("i'm here");
                 //instantiate map on spatial mesh
+                
                 popOutModel = SpatialAwarenessInterface.PlaceObject(placeableMap);
+           
                 if(popOutModel != null)
                 {
                     sounds.playClip("target placed");
@@ -215,7 +216,6 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
             placingMap = true;
             cursor.SetActive(true);
             menuDisplay.SetActive(false);
-
         }
         else
         {

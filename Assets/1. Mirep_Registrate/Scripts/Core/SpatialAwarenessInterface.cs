@@ -39,7 +39,10 @@ public class SpatialAwarenessInterface: MonoBehaviour
         {
             return hitInfo.point;
         }
-        return null;
+        else
+        {
+            return headRay.GetPoint(1.5f);
+        }
     }
 
     private static int GetSpatialMeshMask()

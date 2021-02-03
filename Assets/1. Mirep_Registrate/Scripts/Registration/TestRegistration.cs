@@ -22,13 +22,9 @@ public class TestRegistration : MonoBehaviour
         for (int i = 0; i < testPoints.Length; i++)
         {
             //shift points by 1
-            testPoints[i].x = testPoints[i].x + 0.05f * map((float)rand.NextDouble());// + 2.0f;
-            testPoints[i].y = testPoints[i].y + 0.05f * map((float)rand.NextDouble());// + 2.0f; 
-            testPoints[i].z = testPoints[i].z + 0.05f * map((float)rand.NextDouble());// + 1.0f;
-
-            Debug.Log(testPoints[i].x);
-            Debug.Log(testPoints[i].y);
-            Debug.Log(testPoints[i].z);
+            testPoints[i].x = testPoints[i].x + 2.0f+ 0.15f * map((float)rand.NextDouble());// + 2.0f;
+            testPoints[i].y = testPoints[i].y + 0.15f * map((float)rand.NextDouble());// + 2.0f; 
+            testPoints[i].z = testPoints[i].z + 0.15f * map((float)rand.NextDouble());// + 1.0f;
 
         }
         align = new Alignment3D(testPoints);

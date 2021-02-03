@@ -8,10 +8,16 @@ public class AppState: MonoBehaviour
 {
     public enum Status
     {
+        INTRO_1,
+        INTRO_2,
+        INTRO_3,
         EXPLORATION,
+        FIND_MARKER,
         FIND_TARGET,
         ADJUST_TARGET,
         ADJUST_ROTATION,
+        ADJUST_ROTATIONY,
+        ADJUST_ROTATIONX,
         ADJUST_NORMAL,
         ADJUST_DEPTH,
         ADJUST_X,
@@ -24,28 +30,32 @@ public class AppState: MonoBehaviour
 
     }
 
-
     public static AppState instance = null;
-
     private Status state;
     public InputHandler controls;
+
+    private GameObject[] placedTargets;
+    private GameObject[] markers;
+
+    private Vector3 initialPlacement;
+    Matrix4x4 tfModelToWorld;
+
     private int targets_placed;
     private int markers_detected;
     private float multiplier;
     private bool registrationComputed;
-    private Vector3 initialPlacement;
-    private GameObject[] placedTargets;
-    private GameObject[] markers;
-    Matrix4x4 tfModelToWorld;
-
-
+    private bool rotateYshown = false;
+    private bool translateZshown = false;
+    private bool translateXYshown = false;
 
     [SerializeField]
     public GameObject _objectToPlace;
 
     [SerializeField]
-    bool lockToMarker;
+    public GameObject _objectToPlaceAnimated;
 
+    [SerializeField]
+    bool lockToMarker;
 
     private void Awake()
     {
@@ -68,7 +78,7 @@ public class AppState: MonoBehaviour
 
     void Start()
     {
-        placedTargets = new GameObject[4];
+        placedTargets = new GameObject[Constants.NUM_TARGETS];
 
         markers = new GameObject[] { GameObject.Find("/Marker1"), GameObject.Find("/Marker2"),
             GameObject.Find("/Marker3"), GameObject.Find("/Marker4") };
@@ -105,6 +115,16 @@ public class AppState: MonoBehaviour
     public void setState(Status newState)
     {
         this.state = newState;
+        if(newState == Status.ADJUST_DEPTH && !translateZshown)
+        {
+            this.placedTargets[this.targets_placed].GetComponent<AnimationManager>().TranslateZ();
+            translateZshown = true;
+        }
+        else if (newState == Status.ADJUST_NORMAL && !translateXYshown)
+        {
+            this.placedTargets[this.targets_placed].GetComponent<AnimationManager>().TranslateXY();
+            translateXYshown = true;
+        }
     }
 
     public void setMultiplier(float level)
@@ -125,7 +145,6 @@ public class AppState: MonoBehaviour
     public void incrementMarker()
     {
         this.markers_detected++;
-        this.addAnchor();
     }
 
     public void decrementMarker()
@@ -148,11 +167,27 @@ public class AppState: MonoBehaviour
         }
     }
 
+
     public bool addNewTarget()
     {
-        this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
+        if(this.targets_placed == 0)
+        {
+            this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlaceAnimated);
+            //perform initial animation
+
+        }
+        else
+        {
+            this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
+        }
+
         if (this.placedTargets[this.targets_placed] != null)
         {
+            if (!rotateYshown)
+            {
+                this.placedTargets[this.targets_placed].GetComponent<AnimationManager>().RotateY();
+                rotateYshown = true;
+            }
             initialPlacement = this.placedTargets[this.targets_placed].transform.position;
             return true;
         }
@@ -184,9 +219,10 @@ public class AppState: MonoBehaviour
                 Destroy(this.placedTargets[i]);
             }
 
-            this.placedTargets = new GameObject[4];
+            this.placedTargets = new GameObject[Constants.NUM_TARGETS];
             this.targets_placed = 0;
-            this.state = Status.FIND_TARGET;
+            this.markers_detected = 0;
+            this.state = Status.FIND_MARKER;
         }
 
         return;

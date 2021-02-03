@@ -7,101 +7,40 @@ using UnityEngine;
 
 public class Alignment3D
 {
-    public struct Target
-    {
-        public Vector3 actualCoord;
-        public Vector3 detectedCoord;
-
-        public Target(Vector3 detectedCoord, Vector3 actualCoord)
-        {
-            this.actualCoord = actualCoord;
-            this.detectedCoord = detectedCoord;
-        }
-    }
-
     private Vector3[] model_points;
-
-    //GameObject[] placedTargets;
-    Vector3[] placedTargets;
-    Target[] targetList;
+    private Vector3[] placedTargets;
     Matrix4x4 tfModelToWorld;
 
-    //check to see if this copies the game objects...if so maybe i should change it....but i think an array is just a reference to the first value right?
     public Alignment3D(Vector3[] placedTargets)
     {
         this.placedTargets = placedTargets;
-        this.targetList = new Target[Constants.NUM_TARGETS];
-        //this.targetList = new Target[Constants.NUM_TARGETS];
         //model_points = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0.215f, 0, 0), new Vector3(0.215f, 0.279f, 0), new Vector3(0, 0.279f, 0) };
         model_points = new Vector3[] { new Vector3(1, 1, 0), new Vector3(-1, 1, 0), new Vector3(-1, -1, 0) , new Vector3(1, -1, 0) };
 
-        //maybe get this matrix from constants?
-
-        /*+90 degree rotation for left handed system
-        this.targetList = new Target[] { new Target(new Vector3(0, 0, 0), new Vector3 (0, 0, 0)),
-                       new Target(new Vector3(0, -1, 0), new Vector3(1, 0, 0)),
-                       new Target(new Vector3(1, -1, 0), new Vector3(1, 1, 0)),
-                       new Target(new Vector3(1, 0, 0), new Vector3(0, 1, 0))};
-        
-        */
-
-        for (int i = 0; i < Constants.NUM_TARGETS; i++)
-        {
-            this.targetList[i] = new Target(placedTargets[i], model_points[i]);
-
-            //this.targetList[i] = new Target(this.placedTargets[i].transform.position, model_points[i]);
-
-        }
     }
 
     public (Matrix4x4, bool) computeRegistration()
     {
-        //check if points are same length for robustness
-
-        //Matrix4x4 tfMatrix = Matrix4x4.identity;
         bool successful = false;
 
-        float[,] x_array, y_array;
-        (x_array, y_array) = reformatTargetList(this.targetList);
+        float[] X = VectorToArray1D(this.model_points);
+        float[] Y = VectorToArray1D(this.placedTargets);
 
-        float[] X = Array2DToArray1D(x_array);
-        float[] Y = Array2DToArray1D(y_array);
-        int N = targetList.Length;
+        int N = Constants.NUM_TARGETS;
         float[] R = new float[9];
         float[] t = new float[3];
 
-        float[,] W = new float[3,3];
+        //float[,] w_array = new float[3,3];
+        //float[] W = new float[9];// Array2DToArray1D(W);
 
-        for(int i = 0; i < 3; i++)
-        {
-            for(int j = 0; j < 3; j++)
-            {
-                if (i==j)
-                {
-                    W[i, j] = 1.0f;
-                }
-                else
-                {
-                    W[i, j] = 0.0f;
-                }
-            }
-        }
-
-        float[] w_resized = Array2DToArray1D(W);
-        
-        float error1 = EigenWrapper.registerIsotropic(X, Y, N, R, t);
-
-        float error = EigenWrapper.registerAnisotropic(X, Y, w_resized, N, 0.05f, R, t);
+        float error = EigenWrapper.registerIsotropic(X, Y, N, R, t);
 
         float[,] rotMatrix = Array1DToArray2D(R, 3, 3);
 
         Matrix4x4 Transform = buildTfMatrix(rotMatrix, t);
-        //this.tfModelToWorld = convertToMatrix4x4(T2D).transpose;
-        Debug.Log("Non Iterative error is");
-        Debug.Log(error1);
-        Debug.Log("Iterative error is");
-        Debug.Log(error);
 
+        Debug.Log("error is");
+        Debug.Log(error);
 
         return (Transform, successful);
     }
@@ -114,15 +53,14 @@ public class Alignment3D
             for (int j = 0; j < 3; j++)
             {
                 Tf[i, j] = R[i, j];
-                //Debug.Log(R[i, j]);
             }
         }
+
         for (int i = 0; i < 3; i++)
         {
             Tf[i, 3] = t[i];
-            //Debug.Log(t[i]);
-
         }
+
         Tf[3, 0] = 0.0f;
         Tf[3, 1] = 0.0f;
         Tf[3, 2] = 0.0f;
@@ -146,24 +84,23 @@ public class Alignment3D
         return B;
 
     }
-
-    private static (float[,], float[,]) reformatTargetList(Target[] targetList)
+    private static float[] VectorToArray1D(Vector3[] A)
     {
-        float[,] modelPoints = new float[3,targetList.Length];
-        float[,] detectedPoints = new float[3,targetList.Length];
+        int noOfColumns = A.Length;
+        float[] Array1D = new float[noOfColumns * 3];
+        int i = 0;
 
-        for (int i = 0; i < targetList.Length; i++)
+        for (int column = 0; column < noOfColumns; column++)
         {
-            modelPoints[0,i] = targetList[i].actualCoord.x;
-            modelPoints[1,i] = targetList[i].actualCoord.y;
-            modelPoints[2,i] = targetList[i].actualCoord.z;
+            Array1D[i] = A[column].x;
+            Array1D[i + 1] = A[column].y;
+            Array1D[i + 2] = A[column].z;
 
-            detectedPoints[0,i] = targetList[i].detectedCoord.x;
-            detectedPoints[1,i] = targetList[i].detectedCoord.y;
-            detectedPoints[2,i] = targetList[i].detectedCoord.z;
+            i += 3;
         }
 
-        return (modelPoints, detectedPoints);
+        return Array1D;
+
     }
 
     //From Michael Brand - Conversions.cs
