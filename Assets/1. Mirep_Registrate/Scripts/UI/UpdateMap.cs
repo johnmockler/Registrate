@@ -50,7 +50,7 @@ public class UpdateMap : MonoBehaviour
     {
         currentTargetCount = appStatus.getTargetCount();
         currentMarkerCount = appStatus.getMarkerCount();
-
+        
         if (appStatus.getState() == AppState.Status.FIND_TARGET)// || appStatus.getState() == AppState.Status.ALIGNMENT_READY || appStatus.getState() == AppState.Status.FIND_MARKER)
         {
             if (currentTargetCount != previousTargetCount || appStatus.getState() != previousState)// || previousState == AppState.Status.FIND_MARKER)

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.XR.WSA;
@@ -23,21 +24,25 @@ public class AppState: MonoBehaviour
         ADJUST_X,
         ADJUST_Y,
         ADJUST_Z,
+        CONFIRM_MARKER,
         REGISTRATION,
         ALIGNMENT_READY,
         ALIGNED,
-        FAILED
+        FAILED,
+        MENU_OPEN
 
     }
 
     public static AppState instance = null;
     private Status state;
     public InputHandler controls;
+    private ARUWPController marker_tracker;
 
     private GameObject[] placedTargets;
     private GameObject[] markers;
 
     private Vector3 initialPlacement;
+    private Vector3[] targetAxis;
     Matrix4x4 tfModelToWorld;
 
     private int targets_placed;
@@ -57,6 +62,8 @@ public class AppState: MonoBehaviour
     [SerializeField]
     bool lockToMarker;
 
+
+
     private void Awake()
     {
         if (instance == null)
@@ -69,7 +76,7 @@ public class AppState: MonoBehaviour
 
         print(instance == this);
 
-        this.state = Status.EXPLORATION;
+        this.state = Status.INTRO_1;
         this.controls = new InputHandler();
         this.targets_placed = 0;
         this.markers_detected = 0;
@@ -83,7 +90,9 @@ public class AppState: MonoBehaviour
         markers = new GameObject[] { GameObject.Find("/Marker1"), GameObject.Find("/Marker2"),
             GameObject.Find("/Marker3"), GameObject.Find("/Marker4") };
 
+        marker_tracker = GameObject.Find("ARUWP Controller").GetComponent< ARUWPController >();
         registrationComputed = false;
+        targetAxis = new Vector3[3];
     }
 
     public Status getState()
@@ -149,7 +158,10 @@ public class AppState: MonoBehaviour
 
     public void decrementMarker()
     {
-        this.markers_detected--;
+        if (this.markers_detected != 0)
+        {
+            this.markers_detected--;
+        }
     }
 
     public void confirmPlacement()
@@ -167,9 +179,18 @@ public class AppState: MonoBehaviour
         }
     }
 
+    //Set x, y and z axis vectors. 
+    public void setTargetAxis()
+    {
+        targetAxis[0] = placedTargets[targets_placed].transform.right;
+        targetAxis[1] = placedTargets[targets_placed].transform.up;
+        targetAxis[2] = placedTargets[targets_placed].transform.forward;
+
+    }
 
     public bool addNewTarget()
     {
+        /*
         if(this.targets_placed == 0)
         {
             this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlaceAnimated);
@@ -180,14 +201,17 @@ public class AppState: MonoBehaviour
         {
             this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
         }
-
+        */
+        this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
         if (this.placedTargets[this.targets_placed] != null)
         {
+            /*
             if (!rotateYshown)
             {
                 this.placedTargets[this.targets_placed].GetComponent<AnimationManager>().RotateY();
                 rotateYshown = true;
-            }
+            }*/
+
             initialPlacement = this.placedTargets[this.targets_placed].transform.position;
             return true;
         }
@@ -195,6 +219,58 @@ public class AppState: MonoBehaviour
         {
             return false;
         }
+    }
+
+    //Removes anchor from marker so it can be moved, resumes ARToolkit tracking
+    public void trackMarker()
+    {
+        WorldAnchor anchor = markers[this.markers_detected].AddComponent<WorldAnchor>();
+        if (anchor != null)
+        {
+            Destroy(anchor);
+        }
+
+        if (marker_tracker.status == ARUWP.ARUWP_STATUS_RUNNING)
+        {
+            Debug.Log("Marker tracker already running");
+        }
+        else if (marker_tracker.status != ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
+        {
+            Debug.Log("Error: marker tracking not initialized");
+        }
+        else {
+            marker_tracker.Resume();
+            Debug.Log("Marker tracking resumed");
+        }
+    }
+
+    //adds a world anchor to the marker, pauses tracking, and incremements the marker count
+    public void saveMarker()
+    {
+        markers[this.markers_detected].AddComponent<WorldAnchor>();
+
+
+        if (marker_tracker.status == ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
+        {
+            Debug.Log("Marker Tracking already paused");
+        }
+        else if (marker_tracker.status != ARUWP.ARUWP_STATUS_RUNNING)
+        {
+            Debug.Log("Error: not tracking marker");
+        }
+        else
+        {
+            marker_tracker.Pause();
+            Debug.Log("Marker tracking paused");
+        }
+
+        this.incrementMarker();
+
+    }
+
+    public void resetMarkers()
+    {
+        this.markers_detected = 0;
     }
 
     //resets the target hologram to the original position (maybe just make you place it again?)
@@ -208,6 +284,26 @@ public class AppState: MonoBehaviour
 
         return;
     }
+
+    public void removeTarget()
+    {
+        switch (this.getState())
+        {
+                case AppState.Status.ADJUST_ROTATIONY:
+                case AppState.Status.ADJUST_ROTATIONX:
+                case AppState.Status.ADJUST_NORMAL:
+                case AppState.Status.ADJUST_DEPTH:
+                    Destroy(this.placedTargets[this.targets_placed]);
+                    break;
+                default:
+                    Destroy(this.placedTargets[this.targets_placed - 1]);
+                    decrementTarget();
+                break;
+
+        }
+
+    }
+
 
     public void resetAll()
     {

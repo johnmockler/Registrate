@@ -24,6 +24,8 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     bool translateXYshown = false;
     bool translateZshown = false;
 
+    bool b_PressedOnce = false;
+
     void Awake()
     {
         controls = new InputHandler();
@@ -83,13 +85,27 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             rotationStep = Constants.BASE_ROTATION;
             switch (appStatus.getState())
             {
+                case AppState.Status.INTRO_1:
+                    appStatus.setState(AppState.Status.INTRO_2);
+                    sounds.playClip("enter");
+                    break;
+                case AppState.Status.INTRO_2:
+                    appStatus.setState(AppState.Status.INTRO_3);
+                    sounds.playClip("enter");
+                    break;
+                case AppState.Status.INTRO_3:
+                    appStatus.setState(AppState.Status.EXPLORATION);
+                    sounds.playClip("enter");
+                    break;
                 case AppState.Status.EXPLORATION:
                     appStatus.setState(AppState.Status.FIND_MARKER);
+                    appStatus.trackMarker();
+                    sounds.playClip("enter");
                     break;
                 case AppState.Status.FIND_MARKER:
                     cursor.SetActive(true);
                     sounds.playClip("enter");
-                    appStatus.incrementMarker();
+                    appStatus.saveMarker();
                     appStatus.setState(AppState.Status.FIND_TARGET);
                     break;
                 case AppState.Status.FIND_TARGET:
@@ -105,7 +121,6 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
                         sounds.playClip("enter failed");
                     }
                 break;
-                case AppState.Status.ADJUST_ROTATION:
                 case AppState.Status.ADJUST_ROTATIONY:
                 case AppState.Status.ADJUST_ROTATIONX:
                 case AppState.Status.ADJUST_NORMAL:
@@ -113,15 +128,18 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
                     appStatus.confirmPlacement();
                     if (appStatus.getTargetCount() >= Constants.NUM_TARGETS)
                         {
-                            appStatus.setState(AppState.Status.ALIGNMENT_READY);
+                            appStatus.setState(AppState.Status.CONFIRM_MARKER);
+                            appStatus.resetMarkers();
+                            appStatus.trackMarker();
                         }
                         else
                         {
-                            sounds.playClip("target placed");
+                            sounds.playClip("enter");
                             print(appStatus.getTargetCount()%2);
                             if (appStatus.getTargetCount()%2 == 0)
                             {
                                 appStatus.setState(AppState.Status.FIND_MARKER);
+                                appStatus.trackMarker();
                             }
                             else
                             {
@@ -131,8 +149,21 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
                         }
 
                     break;
+                case AppState.Status.CONFIRM_MARKER:
+                    sounds.playClip("enter");
+                    appStatus.saveMarker();
+                    if (appStatus.getMarkerCount() == Constants.NUM_MARKERS)
+                    {
+                        appStatus.setState(AppState.Status.ALIGNMENT_READY);
+                    }
+                    else
+                    {
+                        appStatus.trackMarker();
+                    }
+                    break;
                 case AppState.Status.ALIGNMENT_READY:
                     appStatus.computeAlignment();
+                    sounds.playClip("enter");
                     break;
             }
         }
@@ -142,15 +173,68 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     {
         if (context.started == true)
         {
+            sounds.playClip("back");
+
             switch (appStatus.getState())
             {
-                case AppState.Status.ADJUST_ROTATION:
+
+                case AppState.Status.INTRO_2:
+                    appStatus.setState(AppState.Status.INTRO_1);
+                    break;
+                case AppState.Status.INTRO_3:
+                    appStatus.setState(AppState.Status.INTRO_2);
+                    break;
+                case AppState.Status.EXPLORATION:
+                    appStatus.setState(AppState.Status.INTRO_3);
+                    break;
+                case AppState.Status.FIND_MARKER:
+                    appStatus.setState(AppState.Status.EXPLORATION);
+                    break;
+                case AppState.Status.FIND_TARGET:
+                    cursor.SetActive(false);
+                    if(appStatus.getTargetCount() == 0)
+                    {
+                        appStatus.setState(AppState.Status.FIND_MARKER);
+                        appStatus.decrementMarker();
+                        appStatus.trackMarker();
+                    }
+                    else
+                    {
+                        appStatus.removeTarget();
+                    }
+                break;
+                case AppState.Status.ADJUST_ROTATIONY:
+                case AppState.Status.ADJUST_ROTATIONX:
                 case AppState.Status.ADJUST_NORMAL:
                 case AppState.Status.ADJUST_DEPTH:
-                    sounds.playClip("back");
-
-                    appStatus.resetTarget();
+                    if (!b_PressedOnce)
+                    {
+                        appStatus.resetTarget();
+                        b_PressedOnce = true;
+                    }
+                    else
+                    {
+                        appStatus.removeTarget();
+                        appStatus.setState(AppState.Status.FIND_TARGET);
+                    }
                     break;
+                case AppState.Status.CONFIRM_MARKER:
+                    if(appStatus.getMarkerCount() == 0)
+                    {
+                        appStatus.removeTarget();
+                        appStatus.setState(AppState.Status.FIND_TARGET);
+                    }
+                    else
+                    {
+                        appStatus.decrementMarker();
+                        appStatus.trackMarker();
+                    }
+                break;
+                case AppState.Status.ALIGNMENT_READY:
+                    appStatus.decrementMarker();
+                    appStatus.trackMarker();
+                    appStatus.setState(AppState.Status.CONFIRM_MARKER);
+                break;
             }
         }
     }

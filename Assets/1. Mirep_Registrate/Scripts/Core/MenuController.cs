@@ -26,6 +26,16 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
     private bool placingMap;
     private Sounds sounds;
 
+    AppState.Status previousState;
+
+    //control tips
+    GameObject controlTips;
+    GameObject a_button;
+    TextMesh a_text;
+    GameObject b_button;
+    TextMesh b_text;
+    GameObject dpad;
+
 
 
     void Awake()
@@ -53,6 +63,10 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
         gameController = GameObject.Find("/_GameController").GetComponent<GameController>(); ;
         modelImage = GameObject.Find("/UserInterface/MenuScreen/Model/ModelImage");
         menuDisplay = GameObject.Find("/UserInterface/MenuScreen");
+        controlTips = GameObject.Find("/UserInterface/ControlTips");
+        dpad = GameObject.Find("/UserInterface/ControlTips/manipulation_controls");
+        a_text = GameObject.Find("/UserInterface/ControlTips/main_controls/a_button/a_button_text").GetComponent<TextMesh>();
+        b_text = GameObject.Find("/UserInterface/ControlTips/main_controls/b_button/b_button_text").GetComponent<TextMesh>();
 
         menuDisplay.SetActive(false);
 
@@ -73,6 +87,9 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
         menuDisplay.SetActive(true);
         placeMap.SetActive(true);
         resetCalib.SetActive(false);
+        previousState = appStatus.getState();
+        appStatus.setState(AppState.Status.MENU_OPEN);
+        controlTips.SetActive(false);
 
     }
 
@@ -81,6 +98,8 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
         print("Menu Controller is disabled");
         controls.UserInterface.Disable();
         menuDisplay.SetActive(false);
+        appStatus.setState(previousState);
+        controlTips.SetActive(true);
     }
 
 
@@ -114,6 +133,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
                     menuDisplay.SetActive(true);
                     cursor.SetActive(false);
                     placingMap = false;
+                    controlTips.SetActive(false);
                 }
                 else
                 {
@@ -216,6 +236,10 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
             placingMap = true;
             cursor.SetActive(true);
             menuDisplay.SetActive(false);
+            controlTips.SetActive(true);
+            dpad.SetActive(false);
+            a_text.text = "Place";
+            b_text.text = "Cancel";
         }
         else
         {

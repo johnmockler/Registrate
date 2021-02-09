@@ -15,7 +15,7 @@ public class Alignment3D
     {
         this.placedTargets = placedTargets;
         //model_points = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0.215f, 0, 0), new Vector3(0.215f, 0.279f, 0), new Vector3(0, 0.279f, 0) };
-        model_points = new Vector3[] { new Vector3(1, 1, 0), new Vector3(-1, 1, 0), new Vector3(-1, -1, 0) , new Vector3(1, -1, 0) };
+        model_points = new Vector3[] { new Vector3(1, 1, 0), new Vector3(-1, 1, 0), new Vector3(-1, -1, 0) , new Vector3(1, -1, 0), new Vector3(1, -1, 0), new Vector3(1, -1, 0) };
 
     }
 
