@@ -9,6 +9,8 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     GameObject cursor;
     GameObject hudDisplay;
 
+    TextMesh statusMessage;
+
     MenuController menuController;
 
     AppState appStatus;
@@ -20,11 +22,9 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     float translationStep = Constants.BASE_TRANSLATION;
     float rotationStep = Constants.BASE_ROTATION;
 
-    bool rotateYshown = false;
-    bool translateXYshown = false;
-    bool translateZshown = false;
 
     bool b_PressedOnce = false;
+    bool toggledControlsOnce = false;
 
     void Awake()
     {
@@ -38,10 +38,10 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
 
         hudDisplay = GameObject.Find("/UserInterface/HUD");
         menuController = GameObject.Find("/_MenuController").GetComponent<MenuController>();
-
+        statusMessage = GameObject.Find("/UserInterface/HUD/StatusMsg").GetComponent<TextMesh>();
         this.sounds = GetComponent<Sounds>();
         cursor.SetActive(false);
-        this.enableControl();
+        this.EnableControl();
     }
 
     void OnEnable()
@@ -49,7 +49,7 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         cursor = GameObject.Find("/Cursor");
     }
 
-    public void enableControl()
+    public void EnableControl()
     {
         controls.Player.Enable();
 
@@ -58,13 +58,13 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             hudDisplay.SetActive(true);
         }
 
-        if (appStatus.getState() == AppState.Status.FIND_TARGET)
+        if (appStatus.GetState() == AppState.Status.FIND_TARGET)
         {
             cursor.SetActive(true);
         }
     }
 
-    public void disableControl()
+    public void DisableControl()
     {
         controls.Player.Disable();
         if (hudDisplay != null)
@@ -83,87 +83,94 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             //reset scaling for each adjustment.
             translationStep = Constants.BASE_TRANSLATION;
             rotationStep = Constants.BASE_ROTATION;
-            switch (appStatus.getState())
+            switch (appStatus.GetState())
             {
                 case AppState.Status.INTRO_1:
-                    appStatus.setState(AppState.Status.INTRO_2);
-                    sounds.playClip("enter");
+                    appStatus.SetState(AppState.Status.INTRO_2);
+                    sounds.PlayClip("enter");
                     break;
                 case AppState.Status.INTRO_2:
-                    appStatus.setState(AppState.Status.INTRO_3);
-                    sounds.playClip("enter");
+                    appStatus.SetState(AppState.Status.INTRO_3);
+                    sounds.PlayClip("enter");
                     break;
                 case AppState.Status.INTRO_3:
-                    appStatus.setState(AppState.Status.EXPLORATION);
-                    sounds.playClip("enter");
+                    appStatus.SetState(AppState.Status.EXPLORATION);
+                    sounds.PlayClip("enter");
                     break;
                 case AppState.Status.EXPLORATION:
-                    appStatus.setState(AppState.Status.FIND_MARKER);
-                    appStatus.trackMarker();
-                    sounds.playClip("enter");
+                    appStatus.SetState(AppState.Status.FIND_MARKER);
+                    sounds.PlayClip("enter");
                     break;
                 case AppState.Status.FIND_MARKER:
                     cursor.SetActive(true);
-                    sounds.playClip("enter");
-                    appStatus.saveMarker();
-                    appStatus.setState(AppState.Status.FIND_TARGET);
+                    sounds.PlayClip("enter");
+                    appStatus.SetState(AppState.Status.FIND_TARGET);
+                    appStatus.SaveMarker();
                     break;
                 case AppState.Status.FIND_TARGET:
 
-                    if (appStatus.addNewTarget())
+                    if (appStatus.AddNewTarget())
                     {
-                        sounds.playClip("enter");
+                        sounds.PlayClip("enter");
                         cursor.SetActive(false);
-                        appStatus.setState(AppState.Status.ADJUST_ROTATIONY);
+                        appStatus.SetState(AppState.Status.ADJUST_ROTATIONY);
+                        toggledControlsOnce = false;
                     }
                     else
                     {
-                        sounds.playClip("enter failed");
+                        sounds.PlayClip("enter failed");
                     }
                 break;
                 case AppState.Status.ADJUST_ROTATIONY:
                 case AppState.Status.ADJUST_ROTATIONX:
                 case AppState.Status.ADJUST_NORMAL:
                 case AppState.Status.ADJUST_DEPTH:
-                    appStatus.confirmPlacement();
-                    if (appStatus.getTargetCount() >= Constants.NUM_TARGETS)
+                    if (!toggledControlsOnce)
+                    {
+                        statusMessage.text = "Position the target before confirming!";
+                    }
+                    else
+                    {
+                        if ((appStatus.GetTargetCount() + 1) >= Constants.NUM_TARGETS)
                         {
-                            appStatus.setState(AppState.Status.CONFIRM_MARKER);
-                            appStatus.resetMarkers();
-                            appStatus.trackMarker();
+                            appStatus.ResetMarkers();
+
+                            appStatus.SetState(AppState.Status.CONFIRM_MARKER);
                         }
                         else
                         {
-                            sounds.playClip("enter");
-                            print(appStatus.getTargetCount()%2);
-                            if (appStatus.getTargetCount()%2 == 0)
+                            sounds.PlayClip("enter");
+                            if ((appStatus.GetTargetCount() + 1) % 2 == 0)
                             {
-                                appStatus.setState(AppState.Status.FIND_MARKER);
-                                appStatus.trackMarker();
+                                appStatus.SetState(AppState.Status.FIND_MARKER);
                             }
                             else
                             {
                                 cursor.SetActive(true);
-                                appStatus.setState(AppState.Status.FIND_TARGET);
+                                appStatus.SetState(AppState.Status.FIND_TARGET);
                             }
                         }
-
+                        appStatus.ConfirmPlacement();
+                    }
                     break;
                 case AppState.Status.CONFIRM_MARKER:
-                    sounds.playClip("enter");
-                    appStatus.saveMarker();
-                    if (appStatus.getMarkerCount() == Constants.NUM_MARKERS)
+                    sounds.PlayClip("enter");
+                    if ((appStatus.GetMarkerCount()+1) == Constants.NUM_MARKERS)
                     {
-                        appStatus.setState(AppState.Status.ALIGNMENT_READY);
+                        appStatus.SetState(AppState.Status.ALIGNMENT_READY);
+
                     }
-                    else
+
+                    appStatus.SaveMarker();
+                    if (appStatus.GetMarkerCount() != Constants.NUM_MARKERS)
                     {
-                        appStatus.trackMarker();
+                        appStatus.RemoveMarkerAnchor();
                     }
+
                     break;
                 case AppState.Status.ALIGNMENT_READY:
-                    appStatus.computeAlignment();
-                    sounds.playClip("enter");
+                    appStatus.ComputeAlignment();
+                    sounds.PlayClip("enter");
                     break;
             }
         }
@@ -173,34 +180,33 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     {
         if (context.started == true)
         {
-            sounds.playClip("back");
+            sounds.PlayClip("back");
 
-            switch (appStatus.getState())
+            switch (appStatus.GetState())
             {
 
                 case AppState.Status.INTRO_2:
-                    appStatus.setState(AppState.Status.INTRO_1);
+                    appStatus.SetState(AppState.Status.INTRO_1);
                     break;
                 case AppState.Status.INTRO_3:
-                    appStatus.setState(AppState.Status.INTRO_2);
+                    appStatus.SetState(AppState.Status.INTRO_2);
                     break;
                 case AppState.Status.EXPLORATION:
-                    appStatus.setState(AppState.Status.INTRO_3);
+                    appStatus.SetState(AppState.Status.INTRO_3);
                     break;
                 case AppState.Status.FIND_MARKER:
-                    appStatus.setState(AppState.Status.EXPLORATION);
+                    appStatus.SetState(AppState.Status.EXPLORATION);
                     break;
                 case AppState.Status.FIND_TARGET:
                     cursor.SetActive(false);
-                    if(appStatus.getTargetCount() == 0)
+                    if(appStatus.GetTargetCount() == 0)
                     {
-                        appStatus.setState(AppState.Status.FIND_MARKER);
-                        appStatus.decrementMarker();
-                        appStatus.trackMarker();
+                        appStatus.SetState(AppState.Status.FIND_MARKER);
+                        appStatus.DecrementMarker();
                     }
                     else
                     {
-                        appStatus.removeTarget();
+                        appStatus.RemoveTarget();
                     }
                 break;
                 case AppState.Status.ADJUST_ROTATIONY:
@@ -209,31 +215,30 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
                 case AppState.Status.ADJUST_DEPTH:
                     if (!b_PressedOnce)
                     {
-                        appStatus.resetTarget();
+                        appStatus.ResetTarget();
                         b_PressedOnce = true;
                     }
                     else
                     {
-                        appStatus.removeTarget();
-                        appStatus.setState(AppState.Status.FIND_TARGET);
+                        appStatus.RemoveTarget();
+                        appStatus.SetState(AppState.Status.FIND_TARGET);
                     }
                     break;
                 case AppState.Status.CONFIRM_MARKER:
-                    if(appStatus.getMarkerCount() == 0)
+                    if(appStatus.GetMarkerCount() == 0)
                     {
-                        appStatus.removeTarget();
-                        appStatus.setState(AppState.Status.FIND_TARGET);
+                        appStatus.RemoveTarget();
+                        appStatus.SetState(AppState.Status.FIND_TARGET);
                     }
                     else
                     {
-                        appStatus.decrementMarker();
-                        appStatus.trackMarker();
+                        appStatus.DecrementMarker();
+                        appStatus.RemoveMarkerAnchor();
                     }
                 break;
                 case AppState.Status.ALIGNMENT_READY:
-                    appStatus.decrementMarker();
-                    appStatus.trackMarker();
-                    appStatus.setState(AppState.Status.CONFIRM_MARKER);
+                    appStatus.DecrementMarker();
+                    appStatus.SetState(AppState.Status.CONFIRM_MARKER);
                 break;
             }
         }
@@ -245,14 +250,14 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         {
             if (translationStep < Constants.BASE_TRANSLATION * Math.Pow(Constants.MULTIPLIER, 4))
             {
-                sounds.playClip("toggle settings");
+                sounds.PlayClip("toggle settings");
                 translationStep *= Constants.MULTIPLIER;
                 rotationStep *= Constants.MULTIPLIER;
-                appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
+                appStatus.SetMultiplier(translationStep / Constants.BASE_TRANSLATION);
             }
             else
             {
-                sounds.playClip("toggle settings failed");
+                sounds.PlayClip("toggle settings failed");
             }
         }
     }
@@ -263,14 +268,14 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
             {
                 if (translationStep > Constants.BASE_TRANSLATION / Math.Pow(Constants.MULTIPLIER, 4))
                 {
-                    sounds.playClip("toggle settings");
+                    sounds.PlayClip("toggle settings");
                     translationStep /= Constants.MULTIPLIER;
                     rotationStep /= Constants.MULTIPLIER;
-                    appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
+                    appStatus.SetMultiplier(translationStep / Constants.BASE_TRANSLATION);
                 }
                 else
                 {
-                    sounds.playClip("toggle settings failed");
+                    sounds.PlayClip("toggle settings failed");
                 }
         }
     }
@@ -279,26 +284,30 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     {
         if (context.started == true)
         {
-            sounds.playClip("toggle settings");
+            sounds.PlayClip("toggle settings");
 
             //reset sensitivity:
             translationStep = Constants.BASE_TRANSLATION;
             rotationStep = Constants.BASE_ROTATION;
-            appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
+            appStatus.SetMultiplier(translationStep / Constants.BASE_TRANSLATION);
 
-            switch (appStatus.getState())
+            switch (appStatus.GetState())
                 {
                     case AppState.Status.ADJUST_ROTATIONY:
-                        appStatus.setState(AppState.Status.ADJUST_ROTATIONX);
+                        appStatus.SetState(AppState.Status.ADJUST_ROTATIONX);
+                        toggledControlsOnce = true;
                         break;
                     case AppState.Status.ADJUST_ROTATIONX:
-                        appStatus.setState(AppState.Status.ADJUST_NORMAL);
+                        appStatus.SetState(AppState.Status.ADJUST_NORMAL);
+                        toggledControlsOnce = true;
                         break;
                     case AppState.Status.ADJUST_NORMAL:
-                        appStatus.setState(AppState.Status.ADJUST_DEPTH);
+                        appStatus.SetState(AppState.Status.ADJUST_DEPTH);
+                        toggledControlsOnce = true;
                         break;
                     case AppState.Status.ADJUST_DEPTH:
-                        appStatus.setState(AppState.Status.ADJUST_ROTATIONY);
+                        appStatus.SetState(AppState.Status.ADJUST_ROTATIONY);
+                        toggledControlsOnce = true;
                         break;
                 }
         }
@@ -308,24 +317,28 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         {
             if (context.started == true)
             {
-                sounds.playClip("toggle settings");
+                sounds.PlayClip("toggle settings");
                 translationStep = Constants.BASE_TRANSLATION;
                 rotationStep = Constants.BASE_ROTATION;
-                appStatus.setMultiplier(translationStep / Constants.BASE_TRANSLATION);
+                appStatus.SetMultiplier(translationStep / Constants.BASE_TRANSLATION);
 
-                switch (appStatus.getState())
+                switch (appStatus.GetState())
                     {
                         case AppState.Status.ADJUST_ROTATIONY:
-                            appStatus.setState(AppState.Status.ADJUST_DEPTH);
+                            appStatus.SetState(AppState.Status.ADJUST_DEPTH);
+                            toggledControlsOnce = true;
                             break;
                         case AppState.Status.ADJUST_ROTATIONX:
-                            appStatus.setState(AppState.Status.ADJUST_ROTATIONY);
+                            appStatus.SetState(AppState.Status.ADJUST_ROTATIONY);
+                            toggledControlsOnce = true;
                             break;
                         case AppState.Status.ADJUST_NORMAL:
-                            appStatus.setState(AppState.Status.ADJUST_ROTATIONX);
+                            appStatus.SetState(AppState.Status.ADJUST_ROTATIONX);
+                            toggledControlsOnce = true;
                             break;
                         case AppState.Status.ADJUST_DEPTH:
-                            appStatus.setState(AppState.Status.ADJUST_NORMAL);
+                            appStatus.SetState(AppState.Status.ADJUST_NORMAL);
+                            toggledControlsOnce = true;
                             break;
                     }
             }
@@ -338,30 +351,30 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
         float y_dir = dir[1];
 
         //only take x values
-        if (appStatus.getState() == AppState.Status.ADJUST_ROTATIONY)
+        if (appStatus.GetState() == AppState.Status.ADJUST_ROTATIONY)
         {
             float rotateY = x_dir * rotationStep;
-            appStatus.rotateTarget(0, -rotateY, 0);
+            appStatus.RotateTarget(0, -rotateY, 0);
         }
         //only take y values
-        if (appStatus.getState() == AppState.Status.ADJUST_ROTATIONX)
+        if (appStatus.GetState() == AppState.Status.ADJUST_ROTATIONX)
         {
             float rotateY = y_dir * rotationStep;
-            appStatus.rotateTarget(rotateY, 0, 0);
+            appStatus.RotateTarget(rotateY, 0, 0);
         }
         //take both
-        else if (appStatus.getState() == AppState.Status.ADJUST_NORMAL)
+        else if (appStatus.GetState() == AppState.Status.ADJUST_NORMAL)
         {
             float translateX = x_dir * translationStep;
             float translateY = y_dir * translationStep;
-            appStatus.translateTarget(translateX, translateY, 0);
+            appStatus.TranslateTarget(translateX, translateY, 0);
 
         }
         //take y values
-        else if (appStatus.getState() == AppState.Status.ADJUST_DEPTH)
+        else if (appStatus.GetState() == AppState.Status.ADJUST_DEPTH)
         {
             float translateZ = y_dir * translationStep;
-            appStatus.translateTarget(0, 0, translateZ);
+            appStatus.TranslateTarget(0, 0, translateZ);
         }
     }
 
@@ -369,10 +382,10 @@ public class GameController: MonoBehaviour, InputHandler.IPlayerActions
     {
         if (context.started == true)
         {
-            sounds.playClip("open menu");
+            sounds.PlayClip("open menu");
 
             //switch control from menu to game
-            this.disableControl();
+            this.DisableControl();
             menuController.enableControl();
 
         }

@@ -70,7 +70,6 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
 
         menuDisplay.SetActive(false);
 
-        print(resetCalib);
         placingMap = false;
     }
     void OnEnable()
@@ -87,8 +86,8 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
         menuDisplay.SetActive(true);
         placeMap.SetActive(true);
         resetCalib.SetActive(false);
-        previousState = appStatus.getState();
-        appStatus.setState(AppState.Status.MENU_OPEN);
+        previousState = appStatus.GetState();
+        appStatus.SetState(AppState.Status.MENU_OPEN);
         controlTips.SetActive(false);
 
     }
@@ -98,7 +97,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
         print("Menu Controller is disabled");
         controls.UserInterface.Disable();
         menuDisplay.SetActive(false);
-        appStatus.setState(previousState);
+        appStatus.SetState(previousState);
         controlTips.SetActive(true);
     }
 
@@ -109,7 +108,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
         {
             if(!placingMap)
             {
-                sounds.playClip("enter");
+                sounds.PlayClip("enter");
 
                 switch (selectedOption)
                 {
@@ -129,7 +128,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
            
                 if(popOutModel != null)
                 {
-                    sounds.playClip("target placed");
+                    sounds.PlayClip("target placed");
                     menuDisplay.SetActive(true);
                     cursor.SetActive(false);
                     placingMap = false;
@@ -137,7 +136,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
                 }
                 else
                 {
-                    sounds.playClip("enter failed");
+                    sounds.PlayClip("enter failed");
 
                 }
 
@@ -150,7 +149,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
     {
         if (context.started == true)
         {
-            sounds.playClip("toggle settings");
+            sounds.PlayClip("toggle settings");
 
             selectedOption += 1;
 
@@ -178,7 +177,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
     {
         if (context.started == true)
         {
-            sounds.playClip("toggle settings");
+            sounds.PlayClip("toggle settings");
 
             selectedOption -= 1;
 
@@ -205,7 +204,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
     {
         if (context.started == true)
         {
-            sounds.playClip("close menu");
+            sounds.PlayClip("close menu");
 
             //switch control from menu to game
             switchControl();
@@ -216,7 +215,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
     {
         if (context.started == true)
         {
-            sounds.playClip("close menu");
+            sounds.PlayClip("close menu");
 
             //switch control from menu to game
             switchControl();
@@ -250,8 +249,7 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
 
     void resetCalibration()
     {
-        print("resetting");
-        appStatus.resetAll();
+        appStatus.ResetAll();
         switchControl();
 
     }
@@ -260,6 +258,6 @@ public class MenuController : MonoBehaviour, InputHandler.IUserInterfaceActions
     {
 
         this.disableControl();
-        gameController.enableControl();
+        gameController.EnableControl();
     }
 }

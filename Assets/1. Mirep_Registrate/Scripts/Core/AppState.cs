@@ -36,7 +36,7 @@ public class AppState: MonoBehaviour
     public static AppState instance = null;
     private Status state;
     public InputHandler controls;
-    private ARUWPController marker_tracker;
+    private ARUWPController markerTracker;
 
     private GameObject[] placedTargets;
     private GameObject[] markers;
@@ -45,8 +45,8 @@ public class AppState: MonoBehaviour
     private Vector3[] targetAxis;
     Matrix4x4 tfModelToWorld;
 
-    private int targets_placed;
-    private int markers_detected;
+    private int targetsPlaced;
+    private int markersDetected;
     private float multiplier;
     private bool registrationComputed;
     private bool rotateYshown = false;
@@ -74,12 +74,10 @@ public class AppState: MonoBehaviour
             Destroy(gameObject) ;
         }
 
-        print(instance == this);
-
         this.state = Status.INTRO_1;
         this.controls = new InputHandler();
-        this.targets_placed = 0;
-        this.markers_detected = 0;
+        this.targetsPlaced = 0;
+        this.markersDetected = 0;
         this.multiplier = 1.0f;
     }
 
@@ -90,12 +88,12 @@ public class AppState: MonoBehaviour
         markers = new GameObject[] { GameObject.Find("/Marker1"), GameObject.Find("/Marker2"),
             GameObject.Find("/Marker3"), GameObject.Find("/Marker4") };
 
-        marker_tracker = GameObject.Find("ARUWP Controller").GetComponent< ARUWPController >();
+        markerTracker = GameObject.Find("ARUWP Controller").GetComponent< ARUWPController >();
         registrationComputed = false;
         targetAxis = new Vector3[3];
     }
 
-    public Status getState()
+    public Status GetState()
     {
         return this.state;
     }
@@ -106,89 +104,85 @@ public class AppState: MonoBehaviour
         return;
     }
 
-    public int getTargetCount()
+    public int GetTargetCount()
     {
-        return targets_placed;
+        return targetsPlaced;
     }
 
-    public int getMarkerCount()
+    public int GetMarkerCount()
     {
-        return markers_detected;
+        return markersDetected;
     }
 
-    public float getMultiplier()
+    public float GetMultiplier()
     {
         return multiplier;
     }
 
-    public void setState(Status newState)
+    public void SetState(Status newState)
     {
         this.state = newState;
-        if(newState == Status.ADJUST_DEPTH && !translateZshown)
-        {
-            this.placedTargets[this.targets_placed].GetComponent<AnimationManager>().TranslateZ();
-            translateZshown = true;
-        }
-        else if (newState == Status.ADJUST_NORMAL && !translateXYshown)
-        {
-            this.placedTargets[this.targets_placed].GetComponent<AnimationManager>().TranslateXY();
-            translateXYshown = true;
-        }
+        EventManager.TriggerStateChange();
     }
 
-    public void setMultiplier(float level)
+    public void SetMultiplier(float level)
     {
         this.multiplier = level;
+        EventManager.TriggerMultiplierChanged();
     }
 
-    public void incrementTarget()
+    public void IncrementTarget()
     {
-        this.targets_placed++;
-    }
-    
-    public void decrementTarget()
-    {
-        this.targets_placed--;
+        this.targetsPlaced++;
+        EventManager.TriggerTargetPlaced();
     }
 
-    public void incrementMarker()
+    public void DecrementTarget()
     {
-        this.markers_detected++;
+        this.targetsPlaced--;
+        EventManager.TriggerTargetPlaced();
     }
 
-    public void decrementMarker()
+    public void IncrementMarker()
     {
-        if (this.markers_detected != 0)
+        this.markersDetected++;
+        EventManager.TriggerMarkerFound();
+    }
+
+    public void DecrementMarker()
+    {
+        if (this.markersDetected != 0)
         {
-            this.markers_detected--;
+            this.markersDetected--;
+            EventManager.TriggerMarkerFound();
         }
     }
 
-    public void confirmPlacement()
+    public void ConfirmPlacement()
     {
         if (lockToMarker)
         {
             //update 2 with however many targets we want per marker...
-            this.placedTargets[this.targets_placed].transform.parent = markers[targets_placed / 2].transform;
-            incrementTarget();
+            this.placedTargets[this.targetsPlaced].transform.parent = markers[targetsPlaced / 2].transform;
+            IncrementTarget();
         }
         else
         {
-            addAnchor();
-            incrementTarget();
+            AddAnchor();
+            IncrementTarget();
         }
     }
 
     //Set x, y and z axis vectors. 
-    public void setTargetAxis()
+    public void SetTargetAxis()
     {
-        targetAxis[0] = placedTargets[targets_placed].transform.right;
-        targetAxis[1] = placedTargets[targets_placed].transform.up;
-        targetAxis[2] = placedTargets[targets_placed].transform.forward;
+        targetAxis[0] = placedTargets[targetsPlaced].transform.right;
+        targetAxis[1] = placedTargets[targetsPlaced].transform.up;
+        targetAxis[2] = placedTargets[targetsPlaced].transform.forward;
 
     }
 
-    public bool addNewTarget()
+    public bool AddNewTarget()
     {
         /*
         if(this.targets_placed == 0)
@@ -202,17 +196,11 @@ public class AppState: MonoBehaviour
             this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
         }
         */
-        this.placedTargets[this.targets_placed] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
-        if (this.placedTargets[this.targets_placed] != null)
+        this.placedTargets[this.targetsPlaced] = SpatialAwarenessInterface.PlaceObject(_objectToPlace);
+        if (this.placedTargets[this.targetsPlaced] != null)
         {
-            /*
-            if (!rotateYshown)
-            {
-                this.placedTargets[this.targets_placed].GetComponent<AnimationManager>().RotateY();
-                rotateYshown = true;
-            }*/
 
-            initialPlacement = this.placedTargets[this.targets_placed].transform.position;
+            initialPlacement = this.placedTargets[this.targetsPlaced].transform.position;
             return true;
         }
         else
@@ -222,82 +210,77 @@ public class AppState: MonoBehaviour
     }
 
     //Removes anchor from marker so it can be moved, resumes ARToolkit tracking
-    public void trackMarker()
+    public void TrackMarker()
     {
-        WorldAnchor anchor = markers[this.markers_detected].AddComponent<WorldAnchor>();
+        WorldAnchor anchor = markers[this.markersDetected].AddComponent<WorldAnchor>();
         if (anchor != null)
         {
             Destroy(anchor);
         }
 
-        if (marker_tracker.status == ARUWP.ARUWP_STATUS_RUNNING)
+        if (markerTracker.status == ARUWP.ARUWP_STATUS_RUNNING)
         {
             Debug.Log("Marker tracker already running");
         }
-        else if (marker_tracker.status != ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
+        else if (markerTracker.status != ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
         {
             Debug.Log("Error: marker tracking not initialized");
         }
         else {
-            marker_tracker.Resume();
+            markerTracker.Resume();
             Debug.Log("Marker tracking resumed");
         }
     }
 
-    //adds a world anchor to the marker, pauses tracking, and incremements the marker count
-    public void saveMarker()
+    public void RemoveMarkerAnchor()
     {
-        markers[this.markers_detected].AddComponent<WorldAnchor>();
-
-
-        if (marker_tracker.status == ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
+        WorldAnchor anchor = markers[this.markersDetected].GetComponent<WorldAnchor>();
+        print(anchor);
+        if (anchor)
         {
-            Debug.Log("Marker Tracking already paused");
+            DestroyImmediate(anchor);
         }
-        else if (marker_tracker.status != ARUWP.ARUWP_STATUS_RUNNING)
-        {
-            Debug.Log("Error: not tracking marker");
-        }
-        else
-        {
-            marker_tracker.Pause();
-            Debug.Log("Marker tracking paused");
-        }
+    }  
+   
 
-        this.incrementMarker();
+    //adds a world anchor to the marker, pauses tracking, and incremements the marker count
+    public void SaveMarker()
+    {
+        markers[this.markersDetected].AddComponent<WorldAnchor>();
+        this.IncrementMarker();
 
     }
 
-    public void resetMarkers()
+    public void ResetMarkers()
     {
-        this.markers_detected = 0;
+        this.markersDetected = 0;
     }
 
     //resets the target hologram to the original position (maybe just make you place it again?)
-    public void resetTarget()
+    public void ResetTarget()
     {
-        if (this.placedTargets[this.targets_placed] != null)
+        if (this.placedTargets[this.targetsPlaced] != null)
         {
-            this.placedTargets[this.targets_placed].transform.position = initialPlacement;
+            this.placedTargets[this.targetsPlaced].transform.position = initialPlacement;
 
         }
 
         return;
     }
 
-    public void removeTarget()
+    public void RemoveTarget()
     {
-        switch (this.getState())
+        switch (this.GetState())
         {
                 case AppState.Status.ADJUST_ROTATIONY:
                 case AppState.Status.ADJUST_ROTATIONX:
                 case AppState.Status.ADJUST_NORMAL:
                 case AppState.Status.ADJUST_DEPTH:
-                    Destroy(this.placedTargets[this.targets_placed]);
+                    Destroy(this.placedTargets[this.targetsPlaced]);
                     break;
                 default:
-                    Destroy(this.placedTargets[this.targets_placed - 1]);
-                    decrementTarget();
+                    Destroy(this.placedTargets[this.targetsPlaced - 1]);
+                    DecrementTarget();
                 break;
 
         }
@@ -305,7 +288,7 @@ public class AppState: MonoBehaviour
     }
 
 
-    public void resetAll()
+    public void ResetAll()
     {
         int n = this.placedTargets.Length;
         if (n > 0)
@@ -316,27 +299,27 @@ public class AppState: MonoBehaviour
             }
 
             this.placedTargets = new GameObject[Constants.NUM_TARGETS];
-            this.targets_placed = 0;
-            this.markers_detected = 0;
+            this.targetsPlaced = 0;
+            this.markersDetected = 0;
             this.state = Status.FIND_MARKER;
         }
 
         return;
     }
 
-    public void translateTarget(float x, float y, float z)
+    public void TranslateTarget(float x, float y, float z)
     {
-        placedTargets[targets_placed].transform.Translate(x, y, z);
+        placedTargets[targetsPlaced].transform.Translate(x, y, z);
     }
 
-    public void rotateTarget(float x, float y, float z)
+    public void RotateTarget(float x, float y, float z)
     {
-        placedTargets[targets_placed].transform.Rotate(x, y, z);
+        placedTargets[targetsPlaced].transform.Rotate(x, y, z);
     }
 
-    public void computeAlignment()
+    public void ComputeAlignment()
     {
-        if(this.computeRegistration())
+        if(this.ComputeRegistration())
         {
             //this.correctPoints();
             this.state = Status.ALIGNED;
@@ -348,21 +331,20 @@ public class AppState: MonoBehaviour
         }
     }
 
-    public bool isRegistered()
+    public bool IsRegistered()
     {
         return registrationComputed;
     }
 
-    private void addAnchor()
+    private void AddAnchor()
     {
-        placedTargets[targets_placed].GetComponent<WorldAnchor>();
+        placedTargets[targetsPlaced].GetComponent<WorldAnchor>();
     }
 
 
-    private bool computeRegistration()
+    private bool ComputeRegistration()
     {
         bool result;
-        print("here");
         Vector3[] targetCoords = new Vector3[placedTargets.Length];
         for (int i = 0; i < placedTargets.Length; i++)
         {
@@ -370,9 +352,7 @@ public class AppState: MonoBehaviour
         }
 
         Alignment3D modelAlign = new Alignment3D(targetCoords);
-        print("here1");
         (tfModelToWorld, result) = modelAlign.computeRegistration();
-        print(result);
         
         return result;
 

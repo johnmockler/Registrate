@@ -6,8 +6,8 @@ using UnityEngine.UI;
 
 public class UpdateMap : MonoBehaviour
 {
-    GameObject[] target_objs;
-    GameObject[] marker_objs;
+    GameObject[] targetObjects;
+    GameObject[] markerObjects;
     AppState appStatus;
     AppState.Status previousState;
     int previousTargetCount;
@@ -20,16 +20,16 @@ public class UpdateMap : MonoBehaviour
 
     void Awake()
     {
-        target_objs = new GameObject[Constants.NUM_TARGETS];
+        targetObjects = new GameObject[Constants.NUM_TARGETS];
         for (int i = 0; i < Constants.NUM_TARGETS; i++)
         {
-            target_objs[i] = this.gameObject.transform.Find(Constants.BRACKET_TARGETS[i]).gameObject;
+            targetObjects[i] = this.gameObject.transform.Find(Constants.BRACKET_TARGETS[i]).gameObject;
         }
 
-        marker_objs = new GameObject[Constants.NUM_MARKERS];
+        markerObjects = new GameObject[Constants.NUM_MARKERS];
         for (int i = 0; i < Constants.NUM_MARKERS; i++)
         {
-            marker_objs[i] = this.gameObject.transform.Find("marker" + i).gameObject;
+            markerObjects[i] = this.gameObject.transform.Find("marker" + i).gameObject;
         }
     }
 
@@ -37,50 +37,39 @@ public class UpdateMap : MonoBehaviour
     void Start()
     {
         appStatus = AppState.instance;
-        previousTargetCount = appStatus.getTargetCount();
-        previousMarkerCount = appStatus.getMarkerCount();
-        updateIndicators(previousMarkerCount,previousTargetCount,1);
-        updateIndicators(previousMarkerCount, previousTargetCount, 0);
-        previousState = appStatus.getState();
+        previousTargetCount = appStatus.GetTargetCount();
+        previousMarkerCount = appStatus.GetMarkerCount();
+        UpdateIndicators(previousMarkerCount,previousTargetCount,1);
+        UpdateIndicators(previousMarkerCount, previousTargetCount, 0);
+        previousState = appStatus.GetState();
 
-
-    }
-    // Update is called once per frame
-    void Update()
-    {
-        currentTargetCount = appStatus.getTargetCount();
-        currentMarkerCount = appStatus.getMarkerCount();
-        
-        if (appStatus.getState() == AppState.Status.FIND_TARGET)// || appStatus.getState() == AppState.Status.ALIGNMENT_READY || appStatus.getState() == AppState.Status.FIND_MARKER)
-        {
-            if (currentTargetCount != previousTargetCount || appStatus.getState() != previousState)// || previousState == AppState.Status.FIND_MARKER)
-            {
-                updateIndicators(currentMarkerCount, currentTargetCount, 1);
-            }
-        }
-        else if (appStatus.getState() == AppState.Status.FIND_MARKER)
-        {
-            if (currentMarkerCount != previousMarkerCount || appStatus.getState() != previousState)// || previousState == AppState.Status.FIND_MARKER)
-            {
-                updateIndicators(currentMarkerCount, currentTargetCount, 0);
-            }
-
-        }
-        else if (appStatus.getState() == AppState.Status.ALIGNMENT_READY)
-        {
-            updateIndicators(currentMarkerCount, currentTargetCount, 2);
-        }
-
-        previousMarkerCount = currentMarkerCount;
-        previousTargetCount = currentTargetCount;
-        previousState = appStatus.getState();
-
+        EventManager.OnMarkerFound += OnMapUpdate;
+        EventManager.OnTargetPlaced += OnMapUpdate;
 
     }
-
-    void updateIndicators(int markerCount, int targetCount, int type )
+    void OnMapUpdate()
     {
-        //type = 0: Marker is active, 1: Target is active, 2: nothing is active
+        currentTargetCount = appStatus.GetTargetCount();
+        currentMarkerCount = appStatus.GetMarkerCount();
+        switch (appStatus.GetState())
+        {
+            case AppState.Status.FIND_MARKER:
+            case AppState.Status.CONFIRM_MARKER:
+                UpdateIndicators(currentMarkerCount, currentTargetCount, 0);
+                break;
+            case AppState.Status.FIND_TARGET:
+                UpdateIndicators(currentMarkerCount, currentTargetCount, 1);
+                break;
+            case AppState.Status.ALIGNMENT_READY:
+                UpdateIndicators(currentMarkerCount, currentTargetCount, 2);
+                break;
+
+        }
+    }
+
+    //type = 0: Marker is active, 1: Target is active, 2: nothing is active
+    void UpdateIndicators(int markerCount, int targetCount, int type )
+    {
         //stop blinking
         if (activeBlinker != null && activeBlinker.GetComponent<Blink>() != null)
         {
@@ -94,7 +83,7 @@ public class UpdateMap : MonoBehaviour
             //completed markers are blue
             if (i < markerCount)
             {
-                marker_objs[i].GetComponent<Image>().color = Color.blue;
+                markerObjects[i].GetComponent<Image>().color = Color.blue;
 
             }
             //active markers are green
@@ -102,16 +91,16 @@ public class UpdateMap : MonoBehaviour
             {                
                 if (type == 0)
                 {
-                    marker_objs[i].GetComponent<Image>().color = Color.green;
-                    marker_objs[i].AddComponent(typeof(Blink));// as Blink;
-                    activeBlinker = marker_objs[i];//.GetComponent<Blink>();
+                    markerObjects[i].GetComponent<Image>().color = Color.green;
+                    markerObjects[i].AddComponent(typeof(Blink));// as Blink;
+                    activeBlinker = markerObjects[i];//.GetComponent<Blink>();
 
                 }
             }
             //not yet active markers are red
             else
             {
-                marker_objs[i].GetComponent<Image>().color = Color.red;
+                markerObjects[i].GetComponent<Image>().color = Color.red;
             }
 
         }
@@ -122,7 +111,7 @@ public class UpdateMap : MonoBehaviour
             //completed targets are blue
             if (i < targetCount)
             {
-                target_objs[i].GetComponent<Image>().color = Color.blue;
+                targetObjects[i].GetComponent<Image>().color = Color.blue;
 
             }
             //active targets are green
@@ -130,15 +119,15 @@ public class UpdateMap : MonoBehaviour
             {                
                 if(type == 1)
                 {
-                    target_objs[i].GetComponent<Image>().color = Color.green;
-                    target_objs[i].AddComponent(typeof(Blink));// as Blink;
-                    activeBlinker = target_objs[i]; //target_objs[i].GetComponent<Blink>();
+                    targetObjects[i].GetComponent<Image>().color = Color.green;
+                    targetObjects[i].AddComponent(typeof(Blink));// as Blink;
+                    activeBlinker = targetObjects[i]; //target_objs[i].GetComponent<Blink>();
                 }
             }
             //not yet active targets are red
             else
             {
-                target_objs[i].GetComponent<Image>().color = Color.red;
+                targetObjects[i].GetComponent<Image>().color = Color.red;
             }
         }
     }

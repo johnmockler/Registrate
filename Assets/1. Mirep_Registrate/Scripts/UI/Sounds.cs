@@ -52,7 +52,7 @@ public class Sounds: MonoBehaviour
             { "open menu", openMenu }, {"close menu", closeMenu },{ "navigate menu", navigateMenu} };
     }
 
-    public void playClip(string clip)
+    public void PlayClip(string clip)
     {
         Debug.Log(clipDict[clip]);
         audioSource.clip = clipDict[clip];
