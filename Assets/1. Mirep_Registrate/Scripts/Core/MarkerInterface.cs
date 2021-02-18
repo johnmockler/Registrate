@@ -15,7 +15,7 @@ public class MarkerInterface : MonoBehaviour
     void Start()
     {
         appStatus = AppState.instance;
-        markerTracker = GameObject.Find("ARUWP Controller").GetComponent<ARUWPController>();
+        markerTracker = GameObject.Find("ARToolKit").GetComponent<ARUWPController>();
         isTracking = false;
         EventManager.OnStateChange += OnStateChange;
     }
@@ -36,25 +36,10 @@ public class MarkerInterface : MonoBehaviour
 
     void ResumeMarkerTracking()
     {
-        appStatus.RemoveMarkerAnchor();
-
         if (!isTracking)
         {
             print("Turning tracking on");
-            if (markerTracker.status == ARUWP.ARUWP_STATUS_RUNNING)
-            {
-                Debug.Log("Marker tracker already running");
-            }
-            else if (markerTracker.status != ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
-            {
-                Debug.Log("Error: marker tracking not initialized");
-            }
-            else
-            {
-                markerTracker.Resume();
-                Debug.Log("Marker tracking resumed");
-            }
-
+            markerTracker.Resume();
             isTracking = true;
         }
 
@@ -64,21 +49,8 @@ public class MarkerInterface : MonoBehaviour
     {
         if(isTracking)
         {
-            print("Turning off tracking");
-            if (markerTracker.status == ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
-            {
-                Debug.Log("Marker Tracking already paused");
-            }
-            else if (markerTracker.status != ARUWP.ARUWP_STATUS_RUNNING)
-            {
-                Debug.Log("Error: not tracking marker");
-            }
-            else
-            {
-                markerTracker.Pause();
-                Debug.Log("Marker tracking paused");
-            }
-
+            print("Turning tracking off");
+            markerTracker.Pause();
             isTracking = false;
         }
     }

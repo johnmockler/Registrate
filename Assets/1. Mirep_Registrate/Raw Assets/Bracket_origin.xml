@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig>
+<Tracking>
+<ModelTarget name="Bracket_origin" motionHint="static" trackingMode="default"/>
+
+</Tracking>
+
+<Assembly name="Bracket_origins_assembly" assemblyId="579cc9a0c0304d6f95c756d93efd84e5">
+<Part name="Bracket_origin" translation="0 0 0" rotation="AD: 0 0 1 0"/>
+<EntryPoint name="viewpoint_0000" translation="0.00667009 -0.0138327 0.297862" rotation="AD: 0.9999998773384252 -0.0013940256401859018 0.38010685348260015 180.393" trained="no">
+
+</EntryPoint>
+<EntryPoint name="viewpoint_0001" translation="-0.00395342 -0.0165124 0.225684" rotation="AD: 0.9999976475431134 -0.005751213300081379 0.4072710435534514 181.499" trained="no">
+
+</EntryPoint>
+
+</Assembly>
+
+</QCARConfig>

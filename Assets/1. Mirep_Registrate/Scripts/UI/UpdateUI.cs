@@ -169,7 +169,7 @@ public class UpdateUI : MonoBehaviour
                 statusMessage = "Adjust each axis of the target \n until it aligns with the bracket. \n change the axis on the directional pad";
                 mode_msg = "Rotate X Axis";
                 moveControls.SetActive(true);
-                aText.text = "Place";
+                aText.text = "Confirm";
                 bText.text = "Reset";
                 moveControls.SetActive(true);
                 upArrow.SetActive(true);
@@ -182,7 +182,7 @@ public class UpdateUI : MonoBehaviour
                 statusMessage = "Adjust each axis of the target \n until it aligns with the bracket. \n change the axis on the directional pad";
                 mode_msg = "Translate Surface Axes";
                 moveControls.SetActive(true);
-                aText.text = "Place";
+                aText.text = "Confirm";
                 bText.text = "Reset";
                 moveControls.SetActive(true);
                 upArrow.SetActive(true);
@@ -195,7 +195,7 @@ public class UpdateUI : MonoBehaviour
                 statusMessage = "Tip: View target from the side to better judge depth.";
                 mode_msg = "Translate Depth";
                 moveControls.SetActive(true);
-                aText.text = "Place";
+                aText.text = "Confirm";
                 bText.text = "Reset";
                 moveControls.SetActive(true);
                 upArrow.SetActive(true);

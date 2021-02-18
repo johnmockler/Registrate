@@ -30,13 +30,12 @@ public class AppState: MonoBehaviour
         ALIGNED,
         FAILED,
         MENU_OPEN
-
     }
 
     public static AppState instance = null;
     private Status state;
     public InputHandler controls;
-    private ARUWPController markerTracker;
+    //private ARUWPController markerTracker;
 
     private GameObject[] placedTargets;
     private GameObject[] markers;
@@ -88,7 +87,7 @@ public class AppState: MonoBehaviour
         markers = new GameObject[] { GameObject.Find("/Marker1"), GameObject.Find("/Marker2"),
             GameObject.Find("/Marker3"), GameObject.Find("/Marker4") };
 
-        markerTracker = GameObject.Find("ARUWP Controller").GetComponent< ARUWPController >();
+        //markerTracker = GameObject.Find("ARUWP Controller").GetComponent< ARUWPController >();
         registrationComputed = false;
         targetAxis = new Vector3[3];
     }
@@ -168,7 +167,7 @@ public class AppState: MonoBehaviour
         }
         else
         {
-            AddAnchor();
+            //AddAnchor();
             IncrementTarget();
         }
     }
@@ -209,33 +208,10 @@ public class AppState: MonoBehaviour
         }
     }
 
-    //Removes anchor from marker so it can be moved, resumes ARToolkit tracking
-    public void TrackMarker()
-    {
-        WorldAnchor anchor = markers[this.markersDetected].AddComponent<WorldAnchor>();
-        if (anchor != null)
-        {
-            Destroy(anchor);
-        }
-
-        if (markerTracker.status == ARUWP.ARUWP_STATUS_RUNNING)
-        {
-            Debug.Log("Marker tracker already running");
-        }
-        else if (markerTracker.status != ARUWP.ARUWP_STATUS_CTRL_INITIALIZED)
-        {
-            Debug.Log("Error: marker tracking not initialized");
-        }
-        else {
-            markerTracker.Resume();
-            Debug.Log("Marker tracking resumed");
-        }
-    }
-
+ 
     public void RemoveMarkerAnchor()
     {
         WorldAnchor anchor = markers[this.markersDetected].GetComponent<WorldAnchor>();
-        print(anchor);
         if (anchor)
         {
             DestroyImmediate(anchor);
@@ -246,7 +222,7 @@ public class AppState: MonoBehaviour
     //adds a world anchor to the marker, pauses tracking, and incremements the marker count
     public void SaveMarker()
     {
-        markers[this.markersDetected].AddComponent<WorldAnchor>();
+        //markers[this.markersDetected].AddComponent<WorldAnchor>();
         this.IncrementMarker();
 
     }

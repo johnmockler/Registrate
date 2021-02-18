@@ -2,13 +2,16 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Blink : MonoBehaviour
 {
     bool active = true;
+    Image image;
     // Start is called before the first frame update
     void Start()
     {
+        //image = this.gameObject.GetComponent<Image>();
         InvokeRepeating("BlinkGameObject", 0, 0.33f);
 
     }

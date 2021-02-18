@@ -70,12 +70,15 @@ public class UpdateMap : MonoBehaviour
     //type = 0: Marker is active, 1: Target is active, 2: nothing is active
     void UpdateIndicators(int markerCount, int targetCount, int type )
     {
+        print("here1");
         //stop blinking
         if (activeBlinker != null && activeBlinker.GetComponent<Blink>() != null)
         {
             Destroy(activeBlinker.GetComponent<Blink>());
             activeBlinker.SetActive(true);
         }
+        print("here2");
+
         //not many markers so we can loop through each time there's an update i think
         for (int i = 0; i < Constants.NUM_MARKERS; i++)
         {
@@ -83,6 +86,7 @@ public class UpdateMap : MonoBehaviour
             //completed markers are blue
             if (i < markerCount)
             {
+                print("i " + i);
                 markerObjects[i].GetComponent<Image>().color = Color.blue;
 
             }
@@ -104,6 +108,7 @@ public class UpdateMap : MonoBehaviour
             }
 
         }
+        print("here3");
 
         for (int i = 0; i < Constants.NUM_TARGETS; i++)
         {

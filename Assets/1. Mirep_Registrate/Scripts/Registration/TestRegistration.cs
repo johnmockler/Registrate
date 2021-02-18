@@ -9,14 +9,19 @@ public class TestRegistration : MonoBehaviour
     private Vector3[] testPoints;
     private System.Random rand;
     private Alignment3D align;
+    private TextMesh statusmsg;
+
+    [SerializeField]
+    public GameObject status;
 
     // Start is called before the first frame update
     void Start()
     {
+        statusmsg = status.GetComponent<TextMesh>();
         rand = new System.Random();
         //testPoints = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0.215f, 0, 0), new Vector3(0.215f, 0.279f, 0), new Vector3(0, 0.279f, 0) };
         //testPoints = new Vector3[] { new Vector3(0, 0, 0), new Vector3(0, -0.215f, 0), new Vector3(0.279f, -0.215f, 0), new Vector3(0.279f, 0 , 0) };
-        testPoints = new Vector3[] {new Vector3(1, 1, 0), new Vector3(-1, 1, 0), new Vector3(-1, -1, 0), new Vector3(1, -1, 0) };
+        testPoints = new Vector3[] { new Vector3(1, 1, 0), new Vector3(-1, 1, 0), new Vector3(-1, -1, 0), new Vector3(1, -1, 0), new Vector3(1, -1, 0), new Vector3(1, -1, 0) };
 
 
         for (int i = 0; i < testPoints.Length; i++)
@@ -28,7 +33,7 @@ public class TestRegistration : MonoBehaviour
 
         }
         align = new Alignment3D(testPoints);
-        print(align.computeRegistration());
+        statusmsg.text = align.computeRegistration().ToString();
 
 
     }

@@ -21,7 +21,7 @@ public class Alignment3D
 
     public (Matrix4x4, bool) computeRegistration()
     {
-        bool successful = false;
+        bool successful = true;
 
         float[] X = VectorToArray1D(this.model_points);
         float[] Y = VectorToArray1D(this.placedTargets);
@@ -33,14 +33,11 @@ public class Alignment3D
         //float[,] w_array = new float[3,3];
         //float[] W = new float[9];// Array2DToArray1D(W);
 
-        float error = EigenWrapper.registerIsotropic(X, Y, N, R, t);
+        EigenWrapper.registerIsotropic(X, Y, N, R, t);
 
         float[,] rotMatrix = Array1DToArray2D(R, 3, 3);
 
         Matrix4x4 Transform = buildTfMatrix(rotMatrix, t);
-
-        Debug.Log("error is");
-        Debug.Log(error);
 
         return (Transform, successful);
     }
